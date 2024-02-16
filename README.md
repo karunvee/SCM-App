@@ -1,2 +1,0 @@
-# SmartComponentManagement
-# SCM-App
