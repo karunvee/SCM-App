@@ -30,6 +30,14 @@ ALLOWED_HOSTS = ['*']
 
 
 # Application definition
+LOGIN_URL = 'login_user'
+LOGOUT_URL = 'logout_user'
+AUTH_USER_MODEL = 'main.Member'
+
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://10.150.192.16",
+# ]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -38,9 +46,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
     'corsheaders',
-    'main'
+    'main',
+    'rest_framework',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -140,10 +149,7 @@ MEDIA_URL = 'media/'
 
 TIME_ZONE = 'Asia/Bangkok'
 
-CORS_ALLOW_ALL_ORIGINS = True
-# CORS_ALLOWED_ORIGINS = [
-#     "http://10.150.192.16",
-# ]
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
