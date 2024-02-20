@@ -1,8 +1,12 @@
 from django.shortcuts import render
 from django.shortcuts import render, redirect, get_object_or_404
-from rest_framework.decorators import api_view
+
+from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 from .models import *
 from .serializers import *
@@ -11,18 +15,101 @@ import time
 import ldap3
 
 @api_view(['POST'])
-def login_user(request, emp_id):
+def login_user(request):
     try:
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        query_serializer = LoginQuerySerializer(data = request.query_params)
+    
+        if query_serializer.is_valid():
+            username = query_serializer.validated_data.get('username')
+            password = query_serializer.validated_data.get('password')
+            ad_server = query_serializer.validated_data.get('ad_server')
+
+            if not Member.objects.filter(username = username).exists():
+                try:
+                    server = ldap3.Server(ad_server, get_info=ldap3.ALL)
+                    connect = ldap3.Connection(server, user = username, password = password, auto_bind=True)
+                    if connect.bind():
+                        user_account = username
+                        base_dn = 'DC=delta,DC=corp'  # Update this to your AD's base DN
+                        search_filter = f'(sAMAccountName={user_account})'
+                        attributes = ['sAMAccountName', 'displayName', 'mail', 'department', 'postalCode']
+                        connect.search(search_base=base_dn, search_filter=search_filter, attributes=attributes)
+
+                        if connect.entries:
+                            entry = connect.entries[0]
+                            print("Account Information:")
+                            ad_username = entry.sAMAccountName.value
+                            ad_displayName = entry.displayName.value
+                            ad_email = entry.mail.value
+                            ad_department = entry.department.value
+                            ad_employeeId = entry.postalCode.value
+
+                            new_member = Member.objects.create(
+                                emp_id = ad_employeeId,
+                                username = username,
+                                name = "%s" % (ad_displayName),
+                                email = ad_email,
+                                department = ad_department,
+
+                                is_staff = False,
+                                is_user = True,
+                                is_superuser = False
+                                )
+
+                            serializer = MemberSerializer(new_member)
+                            return Response({"detail": f"Successfully added {ad_displayName}.", "data": serializer.data}, status=status.HTTP_201_CREATED)
+                        else:
+                            return Response({"detail": "Failure, This user not found in Active Directory"}, status=status.HTTP_404_NOT_FOUND)
+                    
+                except Exception as e:
+                    return Response({"detail": "Credentials are invalid. please check your username or password."}, status=status.HTTP_404_NOT_FOUND)
+
+            else:
+                user = get_object_or_404(Member, username= username)
+                if user.is_superuser:
+                    if not user.check_password(password):
+                        return Response({"detail": "username or password is incorrect."}, status=status.HTTP_404_NOT_FOUND)
+                else:
+                    e_code, e_msg, valid = validate_credentials(username, ad_server, password)
+                    if not valid:
+                        return Response({"detail": "Credentials are invalid. please check your username or password."})
+                token, create = Token.objects.get_or_create(user=user)
+                serializer = MemberSerializer(instance=user)
+                return Response({"detail": "success", "token": token.key, "data": serializer.data})
+            
+        else:
+            return Response(query_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
-def logout_user(request, emp_id):
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def logout_user(request):
     try:
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        token_key = request.headers.get('Authorization').split(' ')[1]
+        if not token_key:
+            return Response({"detail": "Token not provided (%s)" % token_key}, status=status.HTTP_400_BAD_REQUEST)
+        token = get_object_or_404(Token, key=token_key)
+        token.delete()
+        return Response({"detail": "You were logged out."}, status=status.HTTP_200_OK)
     except Exception as e:
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def check_in(request):
+    query_serializer = CheckInQuerySerializer(data = request.query_params)
+
+    if query_serializer.is_valid():
+        emp_id = query_serializer.validated_data.get('emp_id')
+        user = Member.objects.filter(emp_id = emp_id)
+        if user.exists():
+            serializer = MemberSerializer(user.get())
+            return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "This employee id not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -177,3 +264,27 @@ def info_component_list(request):
         print(e)
         return Response({"detail": "Failure, data as your provided is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
     
+
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def pick_up(request):
+    emp_id = request.data.get('image')
+    serial_numbers = request.data.get('serial_numbers', [])
+
+
+
+
+def validate_credentials(username, ad_server, password):
+    try:
+        server = ldap3.Server(ad_server, get_info=ldap3.ALL)
+        connect = ldap3.Connection(server, user=username, password=password, auto_bind=True)
+        if connect.bind():
+            return "", "", True
+        else:
+            print(f"An error occurred: {e}")
+            return "1326", 'The user name or password is incorrect.', False
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return "1326", 'The user name or password is incorrect.', False

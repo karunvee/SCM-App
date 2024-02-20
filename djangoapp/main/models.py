@@ -91,3 +91,12 @@ class SerialNumber(models.Model):
     component = models.ForeignKey(Component, on_delete=models.CASCADE, related_name='serial_numbers')
     def __str__(self):
         return self.serial_number 
+    
+
+class HistoryTrading(models.Model):
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    serial_numbers = models.TextField()
+    issue_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.issue_date 

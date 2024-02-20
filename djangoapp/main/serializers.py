@@ -47,3 +47,17 @@ class SerialNumberWithComponentSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = SerialNumber
         fields = '__all__'
+
+
+class MemberSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = Member
+        fields = '__all__'
+
+class LoginQuerySerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+    ad_server = serializers.CharField()
+
+class CheckInQuerySerializer(serializers.Serializer):
+    emp_id = serializers.CharField()
