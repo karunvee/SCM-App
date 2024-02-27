@@ -60,10 +60,12 @@ admin.site.register(Component, ComponentAdmin)
 
 class MemberAdmin(admin.ModelAdmin):
     search_fields = ['emp_id', 'username']
+    list_filter = ['department', 'is_staff', 'is_user']
+
     list_display = (
+        'username',
         'emp_id',
         'pk',
-        'username',
         'name',
         'email',
         'department',
@@ -72,6 +74,33 @@ class MemberAdmin(admin.ModelAdmin):
         'is_superuser',
         'date_joined'
                     )
-    list_filter = ['department', 'is_staff', 'is_user']
+    
+    fieldsets = (
+        (None, {'fields': ('username', 'date_joined')}),
+        ('Permission', {'fields': ( 'is_staff', 'is_user', 'is_superuser')}),
+        ('Personal', {'fields': ( 'name', 'emp_id', 'email', )})
+    )
+
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'name', 'emp_id', 'email', 'department',
+                       'is_staff', 'is_user', 'is_superuser', 'password1', 'password2')
+        }),
+    )
     
 admin.site.register(Member, MemberAdmin)
+
+
+class HistoryTradingAdmin(admin.ModelAdmin):
+    search_fields = ['member__username', 'member__emp_id', 'component__name', 'component__model']
+    list_display = (
+        'member',
+        'pk',
+        'component',
+        'serial_numbers',
+        'issue_date'
+                    )
+    list_filter = ['component__component_type', 'component__department']
+    
+admin.site.register(HistoryTrading, HistoryTradingAdmin)

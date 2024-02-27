@@ -2,13 +2,18 @@ from django.urls import path, re_path
 from .views import *
 
 urlpatterns = [
-    path('storage/list/', component_list , name='component_list'),
-    path('basic_info/list/', basic_info , name='basic_info'),
-    path('component/add/', add_component , name='add_component'),
+    re_path('storage/list/', component_list , name='component_list'),
+    re_path('basic_info/list/', basic_info , name='basic_info'),
+    re_path('component/add/', add_component , name='add_component'),
     path('component/update/<int:pk>/', update_component , name='update_component'),
     path('component/delete/<int:pk>/', delete_component , name='delete_component'),
-    path('component/list/information/', info_component_list , name='info_component_list'),
+    re_path('component/list/information/', info_component_list , name='info_component_list'),
     re_path('login_user/', login_user , name='login_user'),
     re_path('logout_user/', logout_user , name='logout_user'),
     re_path('check_in/', check_in , name='check_in'),
+    re_path('component/pick_up/', pick_up , name='pick_up'),
+    re_path('component/get_history/', get_history , name='check_in'),
+    re_path('account/list/', get_account , name='get_account'),
+    re_path('account/role/update/', set_account_role , name='set_account_role'),
+    path('account/delete/', delete_account , name='delete_account'),
 ]

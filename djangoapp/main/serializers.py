@@ -54,10 +54,15 @@ class MemberSerializer(serializers.ModelSerializer):
         model = Member
         fields = '__all__'
 
-class LoginQuerySerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField()
-    ad_server = serializers.CharField()
 
-class CheckInQuerySerializer(serializers.Serializer):
+class EmployeeIdQuerySerializer(serializers.Serializer):
     emp_id = serializers.CharField()
+
+
+class HistoryTradingSerializer(serializers.ModelSerializer):
+    member = serializers.StringRelatedField()
+    component = ComponentInfoSerializer()
+
+    class Meta(object):
+        model = HistoryTrading
+        fields = '__all__'

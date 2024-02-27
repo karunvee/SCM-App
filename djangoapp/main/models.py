@@ -94,9 +94,20 @@ class SerialNumber(models.Model):
     
 
 class HistoryTrading(models.Model):
+    member = models.ForeignKey(Member, on_delete=models.CASCADE)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
     serial_numbers = models.TextField()
     issue_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.issue_date 
+        return self.member.name 
+
+class WatchList(models.Model):
+    member = models.ForeignKey(Member, on_delete=models.CASCADE)
+    serial_number = models.ForeignKey(SerialNumber, on_delete=models.CASCADE)
+    issue_date = models.DateTimeField(auto_now_add=True)
+    warning_period = models.IntegerField(default = 7)
+    alert_period = models.IntegerField(default = 14)
+
+    def __str__(self):
+        return self.serial_number.serial_number 

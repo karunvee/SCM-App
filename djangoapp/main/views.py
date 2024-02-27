@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -17,71 +18,83 @@ import ldap3
 @api_view(['POST'])
 def login_user(request):
     try:
-        query_serializer = LoginQuerySerializer(data = request.query_params)
     
-        if query_serializer.is_valid():
-            username = query_serializer.validated_data.get('username')
-            password = query_serializer.validated_data.get('password')
-            ad_server = query_serializer.validated_data.get('ad_server')
+        username = request.data.get('username').lower()
+        password = request.data.get('password')
+        ad_server = request.data.get('ad_server')
 
-            if not Member.objects.filter(username = username).exists():
-                try:
-                    server = ldap3.Server(ad_server, get_info=ldap3.ALL)
-                    connect = ldap3.Connection(server, user = username, password = password, auto_bind=True)
-                    if connect.bind():
-                        user_account = username
-                        base_dn = 'DC=delta,DC=corp'  # Update this to your AD's base DN
-                        search_filter = f'(sAMAccountName={user_account})'
-                        attributes = ['sAMAccountName', 'displayName', 'mail', 'department', 'postalCode']
-                        connect.search(search_base=base_dn, search_filter=search_filter, attributes=attributes)
+        if not Member.objects.filter(username = username).exists():
+            try:
+                server = ldap3.Server(ad_server, get_info=ldap3.ALL)
+                connect = ldap3.Connection(server, user = f'DELTA\\{username}', password = password)
 
-                        if connect.entries:
-                            entry = connect.entries[0]
-                            print("Account Information:")
-                            ad_username = entry.sAMAccountName.value
-                            ad_displayName = entry.displayName.value
-                            ad_email = entry.mail.value
-                            ad_department = entry.department.value
-                            ad_employeeId = entry.postalCode.value
+                if connect.bind():
+                    user_account = username
+                    base_dn = 'DC=delta,DC=corp'  # Update this to your AD's base DN
+                    search_filter = f'(sAMAccountName={user_account})'
+                    attributes = ['sAMAccountName', 'displayName', 'mail', 'department', 'postalCode']
+                    connect.search(search_base=base_dn, search_filter=search_filter, attributes=attributes)
 
-                            new_member = Member.objects.create(
-                                emp_id = ad_employeeId,
-                                username = username,
-                                name = "%s" % (ad_displayName),
-                                email = ad_email,
-                                department = ad_department,
+                    if connect.entries:
+                        entry = connect.entries[0]
 
-                                is_staff = False,
-                                is_user = True,
-                                is_superuser = False
-                                )
+                        ad_username = entry.sAMAccountName.value
+                        ad_displayName = entry.displayName.value
+                        ad_email = entry.mail.value
+                        ad_department = entry.department.value
+                        ad_employeeId = entry.postalCode.value
 
-                            serializer = MemberSerializer(new_member)
-                            return Response({"detail": f"Successfully added {ad_displayName}.", "data": serializer.data}, status=status.HTTP_201_CREATED)
-                        else:
-                            return Response({"detail": "Failure, This user not found in Active Directory"}, status=status.HTTP_404_NOT_FOUND)
-                    
-                except Exception as e:
-                    return Response({"detail": "Credentials are invalid. please check your username or password."}, status=status.HTTP_404_NOT_FOUND)
+                        new_member = Member.objects.create(
+                            emp_id = ad_employeeId,
+                            username = username,
+                            name = "%s" % (ad_displayName),
+                            email = ad_email,
+                            department = ad_department,
 
-            else:
-                user = get_object_or_404(Member, username= username)
-                if user.is_superuser:
-                    if not user.check_password(password):
-                        return Response({"detail": "username or password is incorrect."}, status=status.HTTP_404_NOT_FOUND)
+                            is_staff = False,
+                            is_user = True,
+                            is_superuser = False
+                            )
+
+                        token, create = Token.objects.get_or_create(user=new_member)
+                        serializer = MemberSerializer(new_member)
+                        return Response({"detail": "success", "token": token.key, "data": serializer.data}, status=status.HTTP_201_CREATED)
                 else:
-                    e_code, e_msg, valid = validate_credentials(username, ad_server, password)
-                    if not valid:
-                        return Response({"detail": "Credentials are invalid. please check your username or password."})
-                token, create = Token.objects.get_or_create(user=user)
-                serializer = MemberSerializer(instance=user)
-                return Response({"detail": "success", "token": token.key, "data": serializer.data})
-            
+                    return Response({"detail": "Failure, This user not found in Active Directory"}, status=status.HTTP_404_NOT_FOUND)
+                
+            except Exception as e:
+                return Response({"detail": "Credentials are invalid. please check your username or password."}, status=status.HTTP_404_NOT_FOUND)
+
         else:
-            return Response(query_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            user = get_object_or_404(Member, username= username)
+            if user.is_superuser:
+                if not user.check_password(password):
+                    return Response({"detail": "username or password is incorrect."}, status=status.HTTP_404_NOT_FOUND)
+            else:
+                e_code, e_msg, valid = validate_credentials(username, ad_server, password)
+                if not valid:
+                    return Response({"detail": "Credentials are invalid. please check your username or password."})
+            token, create = Token.objects.get_or_create(user=user)
+            serializer = MemberSerializer(instance=user)
+            return Response({"detail": "success", "token": token.key, "data": serializer.data}, status=status.HTTP_200_OK)
+            
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+def validate_credentials(username, ad_server, password):
+    try:
+        server = ldap3.Server(ad_server, get_info=ldap3.ALL)
+        connect = ldap3.Connection(server, user = f'DELTA\\{username}', password = password)
+
+        if connect.bind():
+            return "", "", True
+        else:
+            print(f"An error occurred: {e}")
+            return "1326", 'The user name or password is incorrect.', False
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return "1326", 'The user name or password is incorrect.', False
+    
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -98,14 +111,16 @@ def logout_user(request):
 
 @api_view(['GET'])
 def check_in(request):
-    query_serializer = CheckInQuerySerializer(data = request.query_params)
+    query_serializer = EmployeeIdQuerySerializer(data = request.query_params)
 
     if query_serializer.is_valid():
         emp_id = query_serializer.validated_data.get('emp_id')
-        user = Member.objects.filter(emp_id = emp_id)
-        if user.exists():
-            serializer = MemberSerializer(user.get())
-            return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        user = Member.objects.get(emp_id = emp_id)
+        if user:
+            serializer = MemberSerializer(instance = user)
+            token, create = Token.objects.get_or_create(user=user)
+
+            return Response({"detail": "success", "data": serializer.data, "token": token.key}, status=status.HTTP_200_OK)
         
         return Response({"detail": "This employee id not found"}, status=status.HTTP_404_NOT_FOUND)
     
@@ -120,7 +135,6 @@ def component_list(request):
     context = {
         'component_list': serializers.data
     }
-    time.sleep(1)
     return Response(context)
 
 @api_view(['GET'])
@@ -270,21 +284,124 @@ def info_component_list(request):
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def pick_up(request):
-    emp_id = request.data.get('image')
-    serial_numbers = request.data.get('serial_numbers', [])
-
-
-
-
-def validate_credentials(username, ad_server, password):
+    historyTrading = []
+    component_list = []
+    consumable_list = []
+    watch_list = []
     try:
-        server = ldap3.Server(ad_server, get_info=ldap3.ALL)
-        connect = ldap3.Connection(server, user=username, password=password, auto_bind=True)
-        if connect.bind():
-            return "", "", True
-        else:
-            print(f"An error occurred: {e}")
-            return "1326", 'The user name or password is incorrect.', False
+        emp_id = request.data.get('emp_id')
+        serial_numbers = request.data.get('serial_numbers', [])
+
+        member_obj = get_object_or_404(Member, emp_id = emp_id)
+
+        for sn in serial_numbers:
+            serial_number_obj = SerialNumber.objects.filter(serial_number = sn)
+            if serial_number_obj.exists():
+
+                component_obj = get_object_or_404(SerialNumber, serial_number = sn).component
+
+                for com_index in component_list:
+                    if com_index.get('component') == component_obj:
+                        com_index['sn'].append(sn)
+                        # print("add", component_list)
+
+                if not any(d.get('component') == component_obj for d in component_list):
+                    component_list.append({
+                        'component': component_obj,
+                        'sn': [sn]
+                    })
+                    # print("new", component_list)
+                if component_obj.consumable:
+                    consumable_list.append(sn)
+                else:
+                    watch_list.append(WatchList(
+                        member = member_obj,
+                        serial_numbers = serial_number_obj,
+                    ))
+
+
+        # print(">>>", component_list)
+        for component in component_list:
+            historyTrading.append(
+                HistoryTrading(
+                    member = member_obj,
+                    component = component.get('component'),
+                    serial_numbers = ', '.join(component.get('sn'))
+                ))
+        
+        HistoryTrading.objects.bulk_create(historyTrading)
+        WatchList.objects.bulk_create(watch_list)
+        SerialNumber.objects.filter(serial_number__in=consumable_list).delete()
+
+        return Response({"detail": "success"}, status=status.HTTP_200_OK)
+
     except Exception as e:
-        print(f"An error occurred: {e}")
-        return "1326", 'The user name or password is incorrect.', False
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_history(request):
+    query_serializer = EmployeeIdQuerySerializer(data = request.query_params)
+
+    if query_serializer.is_valid():
+        emp_id = query_serializer.validated_data.get('emp_id')
+
+        history = HistoryTrading.objects.filter(member__emp_id = emp_id)
+        if history.exists():
+            history_data = HistoryTradingSerializer(instance=history, many=True).data
+
+            return Response({"detail": "success", "data": history_data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "This employee does't have any history."}, status=status.HTTP_204_NO_CONTENT)
+    
+    return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_account(request):
+    try:
+        members = Member.objects.all().exclude(emp_id="")
+        member_serializer = MemberSerializer(instance=members, many=True)
+
+        return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def set_account_role(request):
+    try:
+        update_members = json.loads(request.body.decode('utf-8'))
+
+        for index in update_members:
+            Member.objects.filter(emp_id = index.get('emp_id')).update(is_staff = index.get('is_staff'))
+        
+
+        members = Member.objects.all().exclude(pk=1)
+        member_serializer = MemberSerializer(instance=members, many=True)
+        return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    query_serializer = EmployeeIdQuerySerializer(data = request.query_params)
+
+    if query_serializer.is_valid():
+        emp_id = query_serializer.validated_data.get('emp_id')
+
+        member = Member.objects.filter(emp_id = emp_id)
+        if member.exists():
+            member.delete()
+            return Response({"detail": "success"}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "This employee id not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
