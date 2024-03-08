@@ -25,11 +25,29 @@ class ComponentTypeAdmin(admin.ModelAdmin):
                     )
 admin.site.register(ComponentType, ComponentTypeAdmin)
 
+class MachineTypeAdmin(admin.ModelAdmin):
+    search_fields = ['machine_name']
+    list_display = (
+        'name',
+        'pk',
+                    )
+admin.site.register(MachineType, MachineTypeAdmin)
+
+class POAdmin(admin.ModelAdmin):
+    search_fields = ['po_number']
+    list_display = (
+        'po_number',
+        'pk',
+        'issue_date'
+                    )
+admin.site.register(PO, POAdmin)
+
 class SerialNumberAdmin(admin.ModelAdmin):
-    search_fields = ['serial_number']
+    search_fields = ['serial_number', 'po__po_number']
     list_display = (
         'serial_number',
         'component',
+        'po',
         'pk',
                     )
 admin.site.register(SerialNumber, SerialNumberAdmin)
@@ -69,15 +87,15 @@ class MemberAdmin(admin.ModelAdmin):
         'name',
         'email',
         'department',
-        'is_staff',
         'is_user',
+        'is_staff',
+        'is_supervisor',
         'is_superuser',
         'date_joined'
                     )
-    
     fieldsets = (
         (None, {'fields': ('username', 'date_joined')}),
-        ('Permission', {'fields': ( 'is_staff', 'is_user', 'is_superuser')}),
+        ('Permission', {'fields': ( 'is_staff', 'is_user', 'is_supervisor', 'is_superuser')}),
         ('Personal', {'fields': ( 'name', 'emp_id', 'email', )})
     )
 
@@ -85,10 +103,9 @@ class MemberAdmin(admin.ModelAdmin):
         (None, {
             'classes': ('wide',),
             'fields': ('username', 'name', 'emp_id', 'email', 'department',
-                       'is_staff', 'is_user', 'is_superuser', 'password1', 'password2')
+                       'is_staff', 'is_supervisor' , 'is_user', 'is_superuser', 'password1', 'password2')
         }),
     )
-    
 admin.site.register(Member, MemberAdmin)
 
 
@@ -102,5 +119,43 @@ class HistoryTradingAdmin(admin.ModelAdmin):
         'issue_date'
                     )
     list_filter = ['component__component_type', 'component__department']
-    
 admin.site.register(HistoryTrading, HistoryTradingAdmin)
+
+class OrderTackingAdmin(admin.ModelAdmin):
+    search_fields = ['po__po_number', 'order__id']
+    list_display = (
+        'pk',
+        'status',
+        'po',
+        'pr_date',
+        'po_date',
+        'shipping_date',
+        'receive_date'
+                    )
+    list_filter = ['status']
+admin.site.register(OrderTacking, OrderTackingAdmin)
+
+class CartOrderAdmin(admin.ModelAdmin):
+    search_fields = ['member__username', 'member__name', 'member__emp_id']
+    list_display = (
+        'member',
+        'pk',
+        'serial_numbers',
+                    )
+    list_filter = ['member__department']
+admin.site.register(CartOrder, CartOrderAdmin)
+
+class RequestAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'requester__username', 'requester__name', 'requester__emp_id']
+    list_display = (
+        'id',
+        'requester',
+        'staff_approved',
+        'supervisor_approved',
+        'order_ready',
+        'serial_numbers',
+        'issue_date',
+        'complete_date',
+                    )
+    list_filter = ['order_ready']
+admin.site.register(Request, RequestAdmin)
