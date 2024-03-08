@@ -20,6 +20,28 @@ def component_list(request):
     }
     return Response(context)
 
+@api_view(['GET'])
+def component_filter(request):
+    try:
+        query_serializer = ComponentFilterQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            component_type_content = query_serializer.validated_data.get('component_type_id')
+            machine_type_content = query_serializer.validated_data.get('machine_type_id')
+            print('::', component_type_content, machine_type_content)
+            component_obj = Component.objects.all()
+            if component_type_content != 'ALL':   
+                component_obj = component_obj.filter(component_type__name = component_type_content)
+            if machine_type_content != 'ALL':
+                component_obj = component_obj.filter( machine_type__name = machine_type_content)
+
+            serializers = ComponentWithoutSerialsSerializer(instance=component_obj, many=True)
+
+            return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['POST'])
 def info_component_list(request):

@@ -46,10 +46,22 @@ class ComponentSerializer(serializers.ModelSerializer):
                   'quantity', 'quantity_warning', 'quantity_alert', 
                   'consumable', 'image', 'serial_numbers']
 
+class ComponentWithoutSerialsSerializer(serializers.ModelSerializer):
+    department = serializers.StringRelatedField()
+    machine_type = serializers.StringRelatedField()
+    component_type = serializers.StringRelatedField()
+    location = serializers.StringRelatedField()
+    class Meta(object):
+        model = Component
+        fields = ['id', 'name', 'model', 'description', 'machine_type',
+                  'component_type', 'department', 'location', 'issue_date',
+                  'quantity', 'quantity_warning', 'quantity_alert', 
+                  'consumable', 'image']
 
 class ComponentInfoSerializer(serializers.ModelSerializer):
     department = serializers.StringRelatedField()
     component_type = serializers.StringRelatedField()
+    machine_type = serializers.StringRelatedField()
     location = serializers.StringRelatedField()
     class Meta(object):
         model = Component
@@ -93,6 +105,10 @@ class RequestSerializer(serializers.ModelSerializer):
         model = CartOrder
         fields = '__all__'
 # Params
+class ComponentFilterQuerySerializer(serializers.Serializer):
+    component_type_id = serializers.CharField()
+    machine_type_id = serializers.CharField()
+
 class EmployeeIdQuerySerializer(serializers.Serializer):
     emp_id = serializers.CharField()
 
