@@ -142,12 +142,12 @@ class OrderTacking(models.Model):
     def __str__(self):
         return self.id
     
-class CartOrder(models.Model):
-    member = models.ForeignKey(Member, on_delete=models.CASCADE)
-    serial_numbers = models.TextField()
-    def __str__(self):
-        return self.member.name 
-    
+class RequestComponentRelation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    request = models.ForeignKey('Request', on_delete=models.CASCADE)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    qty = models.PositiveIntegerField(default=1)
+
 class Request(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     requester = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='requester')
@@ -155,8 +155,8 @@ class Request(models.Model):
     staff_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_approved')
     supervisor_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_approved')
 
+    components = models.ManyToManyField(Component, through='RequestComponentRelation')
     order_ready = models.BooleanField(default=False)
-    serial_numbers = models.TextField()
     issue_date = models.DateTimeField(auto_now_add=True)
     complete_date = models.DateTimeField(default=timezone.now)
 

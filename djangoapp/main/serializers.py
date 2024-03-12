@@ -66,6 +66,32 @@ class ComponentInfoSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Component
         fields = '__all__'
+
+class ComponentRelateSerializer(serializers.ModelSerializer):
+    department = serializers.StringRelatedField()
+    machine_type = serializers.StringRelatedField()
+    component_type = serializers.StringRelatedField()
+    location = serializers.StringRelatedField()
+    class Meta(object):
+        model = Component
+        fields = ['id', 'name', 'model', 'description', 'machine_type',
+                  'component_type', 'department', 'location', 'image']
+        
+class RequestComponentRelationSerializer(serializers.ModelSerializer):
+    component = ComponentRelateSerializer()
+    class Meta(object):
+        model = RequestComponentRelation
+        fields = ['id', 'component', 'qty']
+
+class RequestSerializer(serializers.ModelSerializer):
+    requester = serializers.StringRelatedField()
+    staff_approved = serializers.StringRelatedField()
+    supervisor_approved = serializers.StringRelatedField()
+    RequestComponentRelation = RequestComponentRelationSerializer(many=True, read_only=True)
+    class Meta(object):
+        model = Request
+        fields = '__all__'
+
         
 class SerialNumberWithComponentSerializer(serializers.ModelSerializer):
     component = ComponentInfoSerializer()
@@ -91,26 +117,16 @@ class OrderTackingSerializer(serializers.ModelSerializer):
         model = OrderTacking
         fields = '__all__'
 
-class CartOrderSerializer(serializers.ModelSerializer):
-    member = serializers.StringRelatedField()
-    class Meta(object):
-        model = CartOrder
-        fields = '__all__'
-
-class RequestSerializer(serializers.ModelSerializer):
-    requester = serializers.StringRelatedField()
-    # staff_approved = serializers.StringRelatedField()
-    # supervisor_approved = serializers.StringRelatedField()
-    class Meta(object):
-        model = CartOrder
-        fields = '__all__'
 # Params
 class ComponentFilterQuerySerializer(serializers.Serializer):
-    component_type_id = serializers.CharField()
-    machine_type_id = serializers.CharField()
+    component_type_content = serializers.CharField()
+    machine_type_content = serializers.CharField()
 
 class EmployeeIdQuerySerializer(serializers.Serializer):
     emp_id = serializers.CharField()
 
 class ComponentQuerySerializer(serializers.Serializer):
     component_id = serializers.CharField()
+
+class RequestQuerySerializer(serializers.Serializer):
+    request_id = serializers.CharField()

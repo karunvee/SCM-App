@@ -135,15 +135,16 @@ class OrderTackingAdmin(admin.ModelAdmin):
     list_filter = ['status']
 admin.site.register(OrderTacking, OrderTackingAdmin)
 
-class CartOrderAdmin(admin.ModelAdmin):
-    search_fields = ['member__username', 'member__name', 'member__emp_id']
+class RequestComponentRelationAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'requester__username', 'requester__name', 'requester__emp_id']
     list_display = (
-        'member',
-        'pk',
-        'serial_numbers',
+        'id',
+        'request',
+        'component',
+        'qty',
                     )
-    list_filter = ['member__department']
-admin.site.register(CartOrder, CartOrderAdmin)
+    list_filter = ['component__department']
+admin.site.register(RequestComponentRelation, RequestComponentRelationAdmin)
 
 class RequestAdmin(admin.ModelAdmin):
     search_fields = ['id', 'requester__username', 'requester__name', 'requester__emp_id']
@@ -153,7 +154,6 @@ class RequestAdmin(admin.ModelAdmin):
         'staff_approved',
         'supervisor_approved',
         'order_ready',
-        'serial_numbers',
         'issue_date',
         'complete_date',
                     )

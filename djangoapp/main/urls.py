@@ -8,6 +8,15 @@ urlpatterns = [
 
     path('storage/list/', component_list , name='component_list'),
     path('storage/list/filter/', component_filter , name='component_filter'),
+    path('component/info/cart/', component_cart , name='component_cart'),
+    path('checkout/cart/', checkout_cart , name='checkout_cart'),
+
+
+    path('my/request/', my_request , name='my_request'),
+
+    path('storage/item/info/', component_get_one , name='component_get_one'),
+
+
     path('basic_info/list/', basic_info , name='basic_info'),
 
     path('component/add/', add_component , name='add_component'),
