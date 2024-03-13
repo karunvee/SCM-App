@@ -55,6 +55,17 @@ admin.site.register(SerialNumber, SerialNumberAdmin)
 class SerialNumberInline(admin.TabularInline):  # Use 'StackedInline' for a different layout
     model = SerialNumber
     extra = 1 
+
+class ProductionAreaAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'prod_area_name']
+    list_display = (
+        'id',
+        'prod_area_name',
+        'description',
+        'detail',
+                    )
+admin.site.register(ProductionArea, ProductionAreaAdmin)
+
 class ComponentAdmin(admin.ModelAdmin):
     inlines = [SerialNumberInline]
     search_fields = ['name', 'model', 'supplier']
@@ -66,7 +77,7 @@ class ComponentAdmin(admin.ModelAdmin):
         'get_serial_numbers',
         'component_type',
         'location',
-        'department'
+        'department',
                     )
     list_filter = ['component_type', 'department', 'location']
 
@@ -86,6 +97,7 @@ class MemberAdmin(admin.ModelAdmin):
         'pk',
         'name',
         'email',
+        'production_area',
         'department',
         'is_user',
         'is_staff',
@@ -94,7 +106,7 @@ class MemberAdmin(admin.ModelAdmin):
         'date_joined'
                     )
     fieldsets = (
-        (None, {'fields': ('username', 'date_joined')}),
+        (None, {'fields': ('username', 'date_joined', 'production_area')}),
         ('Permission', {'fields': ( 'is_staff', 'is_user', 'is_supervisor', 'is_superuser')}),
         ('Personal', {'fields': ( 'name', 'emp_id', 'email', )})
     )
@@ -102,12 +114,21 @@ class MemberAdmin(admin.ModelAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('username', 'name', 'emp_id', 'email', 'department',
+            'fields': ('username', 'name', 'emp_id', 'email', 'department', 'production_area',
                        'is_staff', 'is_supervisor' , 'is_user', 'is_superuser', 'password1', 'password2')
         }),
     )
 admin.site.register(Member, MemberAdmin)
 
+class ApprovedRouteAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'supervisor_route__name']
+    list_display = (
+        'id',
+        'staff_route',
+        'supervisor_route',
+        'production_area',
+                    )
+admin.site.register(ApprovedRoute, ApprovedRouteAdmin)
 
 class HistoryTradingAdmin(admin.ModelAdmin):
     search_fields = ['member__username', 'member__emp_id', 'component__name', 'component__model']
@@ -146,6 +167,8 @@ class RequestComponentRelationAdmin(admin.ModelAdmin):
     list_filter = ['component__department']
 admin.site.register(RequestComponentRelation, RequestComponentRelationAdmin)
 
+
+
 class RequestAdmin(admin.ModelAdmin):
     search_fields = ['id', 'requester__username', 'requester__name', 'requester__emp_id']
     list_display = (
@@ -153,9 +176,9 @@ class RequestAdmin(admin.ModelAdmin):
         'requester',
         'staff_approved',
         'supervisor_approved',
-        'order_ready',
+        'status',
         'issue_date',
         'complete_date',
                     )
-    list_filter = ['order_ready']
+    list_filter = ['status']
 admin.site.register(Request, RequestAdmin)

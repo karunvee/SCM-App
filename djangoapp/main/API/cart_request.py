@@ -44,7 +44,7 @@ def checkout_cart(request):
         for item in item_list:
             print(item)
             component = get_object_or_404(Component, pk = item['component_id'])
-            RequestComponentRelation.objects.create(request=requestReceipt, component=component, quantity=item['quantity'])
+            RequestComponentRelation.objects.create(request=requestReceipt, component=component, qty=item['quantity'])
 
         return Response({"detail": "success", "request_id": requestReceipt.id}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -59,13 +59,26 @@ def my_request(request):
     try:
         query_serializer = RequestQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
-            request_id = query_serializer.validated_data.get('request_id')
-            # requests = get_object_or_404(Request, id = request_id)
-            requests = Request.objects.all()
-            print(requests)
-            serializer = RequestSerializer(instance=requests, many=True)
-
-            return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            emp_id = query_serializer.validated_data.get('emp_id')
+            requests = Request.objects.filter(requester__emp_id = emp_id)
+            requests_serializer = RequestSerializer(instance=requests, many=True)
+            # Custom Serializer Data
+            for req in requests_serializer.data:
+                reqRel = RequestComponentRelation.objects.filter(request__id = req['id'])
+                req['components'] = []
+                for reqRelIndex in reqRel:
+                    req['components'].append({
+                        'id': reqRelIndex.id,
+                        'component_id' : reqRelIndex.component.pk,
+                        'component_name' : reqRelIndex.component.name,
+                        'component_model' : reqRelIndex.component.model,
+                        'component_machine_type' : reqRelIndex.component.machine_type.name,
+                        'component_component_type' : reqRelIndex.component.component_type.name,
+                        'component_image' : reqRelIndex.component.image_url,
+                        'qty' : reqRelIndex.qty,
+                    })
+            
+            return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:

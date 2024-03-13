@@ -22,12 +22,22 @@ class CustomUserManager(BaseUserManager):
         user.is_superuser = True
         user.save(using=self._db)
         return user
-    
+
+class ProductionArea(models.Model):
+    prod_area_name = models.CharField(max_length = 255)
+    description = models.CharField(max_length = 255)
+    detail = models.CharField(max_length = 255)
+
+    def __str__(self):
+        return self.prod_area_name
+
 class Member(AbstractBaseUser, PermissionsMixin):
     emp_id = models.CharField(unique=True, max_length = 10)
     username = models.CharField(unique=True,max_length = 100)
     name = models.CharField(max_length = 200)
     department = models.CharField(max_length = 250)
+    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
+
     email = models.EmailField(unique=True)
 
     is_user = models.BooleanField(default=True)
@@ -42,7 +52,15 @@ class Member(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return "%s,%s" % (self.emp_id, self.name)
-    
+
+class ApprovedRoute(models.Model):
+    staff_route = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_route')
+    supervisor_route = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_route')
+    production_area = models.OneToOneField(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
+
+    def __str__(self):
+        return self.production_area.prod_area_name
+
 class Department(models.Model):
     name = models.CharField(max_length = 250)
     def __str__(self):
@@ -67,15 +85,16 @@ class Component(models.Model):
     image = models.ImageField(upload_to='images/', blank=True)
     name = models.CharField(max_length = 250)
     model = models.CharField(max_length = 250)
-    # sn = ArrayField(models.CharField(max_length=50), blank=True)
-    # sn_list = models.ManyToManyField(SerialNumber) 
     description = models.CharField(max_length = 250, blank = True)
     component_type = models.ForeignKey(ComponentType, on_delete=models.CASCADE)
     machine_type = models.ForeignKey(MachineType, on_delete=models.CASCADE)
+    purpose_detail = models.CharField(max_length = 250, blank = True) 
+    
     supplier = models.CharField(max_length = 250, blank = True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
 
+    price = models.IntegerField(default=0)
     quantity = models.IntegerField()
     quantity_warning = models.IntegerField(default=20)
     quantity_alert = models.IntegerField(default=10)
@@ -141,24 +160,27 @@ class OrderTacking(models.Model):
 
     def __str__(self):
         return self.id
-    
-class RequestComponentRelation(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    request = models.ForeignKey('Request', on_delete=models.CASCADE)
-    component = models.ForeignKey(Component, on_delete=models.CASCADE)
-    qty = models.PositiveIntegerField(default=1)
 
 class Request(models.Model):
+    STATUS = (('Requested', 'Requested'), ('Staff', 'Staff'), ('Manager', 'Manager'), ('Preparing', 'Preparing'), ('Success', 'Success'))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     requester = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='requester')
-
     staff_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_approved')
     supervisor_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_approved')
-
-    components = models.ManyToManyField(Component, through='RequestComponentRelation')
-    order_ready = models.BooleanField(default=False)
+    status =  models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])
     issue_date = models.DateTimeField(auto_now_add=True)
     complete_date = models.DateTimeField(default=timezone.now)
+    components = models.ManyToManyField(Component, through='RequestComponentRelation')
 
     def __str__(self):
         return f"{self.id}"
+    
+class RequestComponentRelation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    request = models.ForeignKey(Request, on_delete=models.CASCADE)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    qty = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.component.name}"
+    

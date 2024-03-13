@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from ..models import *
 from ..serializers import *
 
+
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -25,6 +26,19 @@ def get_account(request):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_production_area(request):
+    try:
+        prodArea = ProductionArea.objects.all()
+        serializer = ProductionAreaSerializer(instance=prodArea, many=True)
+        return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -33,8 +47,13 @@ def set_account_role(request):
         update_members = json.loads(request.body.decode('utf-8'))
 
         for index in update_members:
+            
+            production_area = index.get('production_area')
+            pdAreaObj = get_object_or_404(ProductionArea, pk = production_area.get('id'))
+
             Member.objects.filter(emp_id = index.get('emp_id')).update(is_staff = index.get('is_staff'))
-        
+            Member.objects.filter(emp_id = index.get('emp_id')).update(production_area = pdAreaObj)
+
 
         members = Member.objects.all().exclude(pk=1)
         member_serializer = MemberSerializer(instance=members, many=True)

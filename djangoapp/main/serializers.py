@@ -41,7 +41,7 @@ class ComponentSerializer(serializers.ModelSerializer):
     location = serializers.StringRelatedField()
     class Meta(object):
         model = Component
-        fields = ['id', 'name', 'model', 'description', 'machine_type',
+        fields = ['id', 'name', 'model', 'description', 'machine_type', 'purpose_detail', 'price',
                   'component_type', 'department', 'location', 'issue_date',
                   'quantity', 'quantity_warning', 'quantity_alert', 
                   'consumable', 'image', 'serial_numbers']
@@ -53,7 +53,7 @@ class ComponentWithoutSerialsSerializer(serializers.ModelSerializer):
     location = serializers.StringRelatedField()
     class Meta(object):
         model = Component
-        fields = ['id', 'name', 'model', 'description', 'machine_type',
+        fields = ['id', 'name', 'model', 'description', 'machine_type', 'purpose_detail', 'price',
                   'component_type', 'department', 'location', 'issue_date',
                   'quantity', 'quantity_warning', 'quantity_alert', 
                   'consumable', 'image']
@@ -67,18 +67,8 @@ class ComponentInfoSerializer(serializers.ModelSerializer):
         model = Component
         fields = '__all__'
 
-class ComponentRelateSerializer(serializers.ModelSerializer):
-    department = serializers.StringRelatedField()
-    machine_type = serializers.StringRelatedField()
-    component_type = serializers.StringRelatedField()
-    location = serializers.StringRelatedField()
-    class Meta(object):
-        model = Component
-        fields = ['id', 'name', 'model', 'description', 'machine_type',
-                  'component_type', 'department', 'location', 'image']
         
 class RequestComponentRelationSerializer(serializers.ModelSerializer):
-    component = ComponentRelateSerializer()
     class Meta(object):
         model = RequestComponentRelation
         fields = ['id', 'component', 'qty']
@@ -87,10 +77,11 @@ class RequestSerializer(serializers.ModelSerializer):
     requester = serializers.StringRelatedField()
     staff_approved = serializers.StringRelatedField()
     supervisor_approved = serializers.StringRelatedField()
-    RequestComponentRelation = RequestComponentRelationSerializer(many=True, read_only=True)
+    # components = ComponentWithoutSerialsSerializer(many=True, read_only=True)
     class Meta(object):
         model = Request
-        fields = '__all__'
+        fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'status',
+                  'issue_date', 'complete_date']
 
         
 class SerialNumberWithComponentSerializer(serializers.ModelSerializer):
@@ -99,7 +90,13 @@ class SerialNumberWithComponentSerializer(serializers.ModelSerializer):
         model = SerialNumber
         fields = '__all__'
 
+class ProductionAreaSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = ProductionArea
+        fields = '__all__'
+
 class MemberSerializer(serializers.ModelSerializer):
+    production_area = ProductionAreaSerializer()
     class Meta(object):
         model = Member
         fields = '__all__'
@@ -129,4 +126,4 @@ class ComponentQuerySerializer(serializers.Serializer):
     component_id = serializers.CharField()
 
 class RequestQuerySerializer(serializers.Serializer):
-    request_id = serializers.CharField()
+    emp_id = serializers.CharField()
