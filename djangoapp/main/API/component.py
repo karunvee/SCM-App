@@ -99,6 +99,8 @@ def add_component(request):
         # serial_numbers = request.data.get('serial_numbers').split(',')
         description = request.data.get('description')
         consumable = request.data.get('consumable')
+        purpose_detail = request.data.get('purpose_detail')
+        price = request.data.get('price')
         
         machine_type, ct_created = MachineType.objects.get_or_create(name=request.data.get('machine_type'), defaults={})
         component_type, ct_created = ComponentType.objects.get_or_create(name=request.data.get('component_type'), defaults={})
@@ -115,6 +117,8 @@ def add_component(request):
             model=model,
             consumable=consumable,
             description=description,
+            purpose_detail=purpose_detail,
+            price=price,
             machine_type=machine_type,
             component_type=component_type,
             department=department,
@@ -146,6 +150,8 @@ def update_component(request, pk):
         # serial_numbers = request.data['serial_numbers'].split(',')
         description = request.data.get('description')
         consumable = request.data.get('consumable')
+        purpose_detail = request.data.get('purpose_detail')
+        price = request.data.get('price')
 
         machine_type, ct_created = MachineType.objects.get_or_create(name=request.data.get('machine_type'), defaults={})
         component_type, ct_created = ComponentType.objects.get_or_create(name=request.data.get('component_type'), defaults={})
@@ -165,6 +171,8 @@ def update_component(request, pk):
         component_obj.model = model
         component_obj.consumable = bool(consumable)
         component_obj.description = description
+        component_obj.purpose_detail = purpose_detail
+        component_obj.price = price
         component_obj.machine_type = machine_type
         component_obj.component_type = component_type
         component_obj.department = department

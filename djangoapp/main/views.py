@@ -18,6 +18,7 @@ from .API.component import *
 from .API.account import *
 from .API.po_api import *
 from .API.cart_request import *
+from .API.approved_route import *
 
 
 @api_view(['POST'])

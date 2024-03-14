@@ -77,10 +77,11 @@ class RequestSerializer(serializers.ModelSerializer):
     requester = serializers.StringRelatedField()
     staff_approved = serializers.StringRelatedField()
     supervisor_approved = serializers.StringRelatedField()
+    prepare_by = serializers.StringRelatedField()
     # components = ComponentWithoutSerialsSerializer(many=True, read_only=True)
     class Meta(object):
         model = Request
-        fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'status',
+        fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'prepare_by','status', 'rejected',
                   'issue_date', 'complete_date']
 
         
@@ -114,6 +115,16 @@ class OrderTackingSerializer(serializers.ModelSerializer):
         model = OrderTacking
         fields = '__all__'
 
+class ApprovedRouteSerializer(serializers.ModelSerializer):
+    staff_route = MemberSerializer()
+    staff_route_second = MemberSerializer()
+    supervisor_route = MemberSerializer()
+    supervisor_route_second = MemberSerializer()
+    production_area = ProductionAreaSerializer()
+    class Meta(object):
+        model = ApprovedRoute
+        fields = '__all__'
+
 # Params
 class ComponentFilterQuerySerializer(serializers.Serializer):
     component_type_content = serializers.CharField()
@@ -125,5 +136,16 @@ class EmployeeIdQuerySerializer(serializers.Serializer):
 class ComponentQuerySerializer(serializers.Serializer):
     component_id = serializers.CharField()
 
-class RequestQuerySerializer(serializers.Serializer):
+class RequestEmployeeIdQuerySerializer(serializers.Serializer):
     emp_id = serializers.CharField()
+
+class RequestQuerySerializer(serializers.Serializer):
+    request_id = serializers.CharField()
+
+class ApprovedRouteIdQuerySerializer(serializers.Serializer):
+    route_id = serializers.CharField()
+
+class ApprovedRouteIdUpdateQuerySerializer(serializers.Serializer):
+    route_id = serializers.CharField()
+    staff_id = serializers.CharField()
+    manager_id = serializers.CharField()

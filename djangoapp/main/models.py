@@ -55,7 +55,9 @@ class Member(AbstractBaseUser, PermissionsMixin):
 
 class ApprovedRoute(models.Model):
     staff_route = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_route')
+    staff_route_second  = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_route_second',blank=True, null=True)
     supervisor_route = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_route')
+    supervisor_route_second  = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_route_second',blank=True, null=True)
     production_area = models.OneToOneField(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self):
@@ -167,11 +169,28 @@ class Request(models.Model):
     requester = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='requester')
     staff_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_approved')
     supervisor_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_approved')
+
+    prepare_by = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='prepare_by', blank=True, null=True)
+
     status =  models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])
+    rejected = models.BooleanField(default= False)
     issue_date = models.DateTimeField(auto_now_add=True)
     complete_date = models.DateTimeField(default=timezone.now)
     components = models.ManyToManyField(Component, through='RequestComponentRelation')
 
+    def update_status_to_next(self):
+        current_status_index = [status[0] for status in self.STATUS].index(self.status)
+        next_status_index = current_status_index + 1
+
+        # Check if there's a next status available
+        if next_status_index < len(self.STATUS):
+            next_status = self.STATUS[next_status_index][0]
+            self.status = next_status
+            self.save()
+            return True
+        else:
+            return False
+        
     def __str__(self):
         return f"{self.id}"
     

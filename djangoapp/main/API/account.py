@@ -18,7 +18,7 @@ from ..serializers import *
 @permission_classes([IsAuthenticated])
 def get_account(request):
     try:
-        members = Member.objects.all().exclude(emp_id="")
+        members = Member.objects.all().exclude(pk = 1)
         member_serializer = MemberSerializer(instance=members, many=True)
 
         return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
@@ -51,8 +51,11 @@ def set_account_role(request):
             production_area = index.get('production_area')
             pdAreaObj = get_object_or_404(ProductionArea, pk = production_area.get('id'))
 
-            Member.objects.filter(emp_id = index.get('emp_id')).update(is_staff = index.get('is_staff'))
-            Member.objects.filter(emp_id = index.get('emp_id')).update(production_area = pdAreaObj)
+            Member.objects.filter(emp_id = index.get('emp_id')).update(
+                is_staff = index.get('is_staff'),
+                is_supervisor = index.get('is_supervisor'),
+                production_area = pdAreaObj
+                )
 
 
         members = Member.objects.all().exclude(pk=1)

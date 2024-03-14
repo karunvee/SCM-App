@@ -177,6 +177,7 @@ class RequestAdmin(admin.ModelAdmin):
         'staff_approved',
         'supervisor_approved',
         'status',
+        'rejected',
         'issue_date',
         'complete_date',
                     )

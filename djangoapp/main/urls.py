@@ -7,16 +7,23 @@ urlpatterns = [
     path('check_in/', check_in , name='check_in'),
 
     path('account/pd/area/', get_production_area , name='get_production_area'),
+    path('approved/route/info/', get_approved_route , name='get_approved_route'),    
 
+    path('basic_info/list/', basic_info , name='basic_info'),
     path('storage/list/', component_list , name='component_list'),
     path('storage/list/filter/', component_filter , name='component_filter'),
+    path('storage/item/info/', component_get_one , name='component_get_one'),
+
     path('component/info/cart/', component_cart , name='component_cart'),
     path('checkout/cart/', checkout_cart , name='checkout_cart'),
 
     path('my/request/', my_request , name='my_request'),
-    path('storage/item/info/', component_get_one , name='component_get_one'),
+    path('my/request/delete/', delete_my_request , name='delete_my_request'),
 
-    path('basic_info/list/', basic_info , name='basic_info'),
+    path('request/approval/list/', approval_list , name='approval_list'),
+    path('request/approved/', approved_order , name='approved_order'),
+
+
 
     path('component/add/', add_component , name='add_component'),
     path('component/update/<int:pk>/', update_component , name='update_component'),

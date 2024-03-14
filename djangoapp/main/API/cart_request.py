@@ -37,8 +37,12 @@ def checkout_cart(request):
         print(item_list, requester_emp_id)
 
         rqt = get_object_or_404(Member, emp_id = requester_emp_id)
-        staff = get_object_or_404(Member, pk = 1)
-        sup = get_object_or_404(Member, pk = 1)
+        if rqt.production_area:
+            staff = get_object_or_404(ApprovedRoute, production_area = rqt.production_area).staff_route
+            sup = get_object_or_404(ApprovedRoute, production_area = rqt.production_area).supervisor_route
+        else:
+            staff = get_object_or_404(Member, pk = 1)
+            sup = staff
 
         requestReceipt = Request.objects.create(requester = rqt, staff_approved = staff, supervisor_approved = sup)
         for item in item_list:
@@ -57,7 +61,7 @@ def checkout_cart(request):
 @permission_classes([IsAuthenticated])
 def my_request(request):
     try:
-        query_serializer = RequestQuerySerializer(data = request.query_params)
+        query_serializer = RequestEmployeeIdQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
             emp_id = query_serializer.validated_data.get('emp_id')
             requests = Request.objects.filter(requester__emp_id = emp_id)
@@ -79,6 +83,22 @@ def my_request(request):
                     })
             
             return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_my_request(request):
+    try:
+        query_serializer = RequestQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            request_id = query_serializer.validated_data.get('request_id')
+            Request.objects.filter(id = request_id).delete()
+            
+            return Response({"detail": "success"}, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
