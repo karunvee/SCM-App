@@ -134,6 +134,21 @@ def preparing_list(request):
     try:
         request_obj = Request.objects.filter(status = 'Preparing')
         requests_serializer = RequestSerializer(instance=request_obj, many=True)
+        # Custom Serializer Data
+        for req in requests_serializer.data:
+            reqRel = RequestComponentRelation.objects.filter(request__id = req['id'])
+            req['components'] = []
+            for reqRelIndex in reqRel:
+                req['components'].append({
+                    'id': reqRelIndex.id,
+                    'component_id' : reqRelIndex.component.pk,
+                    'component_name' : reqRelIndex.component.name,
+                    'component_model' : reqRelIndex.component.model,
+                    'component_machine_type' : reqRelIndex.component.machine_type.name,
+                    'component_component_type' : reqRelIndex.component.component_type.name,
+                    'component_image' : reqRelIndex.component.image_url,
+                    'qty' : reqRelIndex.qty,
+                })
 
         return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
