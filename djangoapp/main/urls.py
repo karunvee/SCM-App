@@ -22,6 +22,7 @@ urlpatterns = [
 
     path('request/approval/list/', approval_list , name='approval_list'),
     path('request/approved/', approved_order , name='approved_order'),
+    path('preparing/list/', preparing_list , name='preparing_list'),
 
 
 

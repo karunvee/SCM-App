@@ -169,7 +169,7 @@ class Request(models.Model):
     requester = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='requester')
     staff_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_approved')
     supervisor_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_approved')
-
+    purpose_detail = models.TextField()
     prepare_by = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='prepare_by', blank=True, null=True)
 
     status =  models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])

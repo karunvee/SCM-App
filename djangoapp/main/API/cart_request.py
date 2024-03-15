@@ -34,7 +34,8 @@ def checkout_cart(request):
     try:
         item_list = request.data.get('item_list')
         requester_emp_id = request.data.get('requester_emp_id')
-        print(item_list, requester_emp_id)
+        purpose_detail = request.data.get('purpose_detail')
+        print(item_list, requester_emp_id, purpose_detail)
 
         rqt = get_object_or_404(Member, emp_id = requester_emp_id)
         if rqt.production_area:
@@ -44,7 +45,7 @@ def checkout_cart(request):
             staff = get_object_or_404(Member, pk = 1)
             sup = staff
 
-        requestReceipt = Request.objects.create(requester = rqt, staff_approved = staff, supervisor_approved = sup)
+        requestReceipt = Request.objects.create(requester = rqt, staff_approved = staff, supervisor_approved = sup, purpose_detail = purpose_detail)
         for item in item_list:
             print(item)
             component = get_object_or_404(Component, pk = item['component_id'])

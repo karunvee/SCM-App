@@ -100,6 +100,8 @@ def approved_order(request):
     try:
         request_id = request.data.get('request_id')
         emp_id = request.data.get('emp_id')
+        method = request.data.get('method')
+       
         member = get_object_or_404(Member, emp_id = emp_id)
 
         request_obj = Request.objects.filter(id = request_id)
@@ -110,12 +112,29 @@ def approved_order(request):
         models.Q(supervisor_approved=member)
         )
         if member_requests.exists():
-            if not request_obj.get().update_status_to_next():
-                return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
-            
+            if method == 'approve':
+                if not request_obj.get().update_status_to_next():
+                    return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
+            elif method == 'reject':
+                request_obj.update(rejected = True)
+            elif method == 'reset':
+                request_obj.update(rejected = False)
+            else:
+                request_obj.delete()
             return Response({"detail": "success"}, status=status.HTTP_200_OK)
-        
+            
         return Response({"detail": "Permission denied"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def preparing_list(request):
+    try:
+        request_obj = Request.objects.filter(status = 'Preparing')
+        requests_serializer = RequestSerializer(instance=request_obj, many=True)
+
+        return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
