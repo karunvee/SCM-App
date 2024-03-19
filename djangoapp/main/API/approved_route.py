@@ -132,7 +132,7 @@ def approved_order(request):
 @permission_classes([IsAuthenticated])
 def preparing_list(request):
     try:
-        request_obj = Request.objects.filter(status = 'Preparing')
+        request_obj = Request.objects.filter(status__in = ['Manager' ,'Preparing'])
         requests_serializer = RequestSerializer(instance=request_obj, many=True)
         # Custom Serializer Data
         for req in requests_serializer.data:
@@ -150,6 +150,6 @@ def preparing_list(request):
                     'qty' : reqRelIndex.qty,
                 })
 
-        return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

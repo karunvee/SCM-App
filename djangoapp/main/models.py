@@ -3,6 +3,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group, Permission
 import uuid
+
 # Create your models here.
     
 class CustomUserManager(BaseUserManager):
@@ -90,7 +91,7 @@ class Component(models.Model):
     description = models.CharField(max_length = 250, blank = True)
     component_type = models.ForeignKey(ComponentType, on_delete=models.CASCADE)
     machine_type = models.ForeignKey(MachineType, on_delete=models.CASCADE)
-    purpose_detail = models.CharField(max_length = 250, blank = True) 
+    unique_id = models.CharField(max_length = 3, blank = False) 
     
     supplier = models.CharField(max_length = 250, blank = True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
@@ -119,7 +120,6 @@ class PO(models.Model):
 
     def __str__(self):
         return self.po_number 
-
 
 class SerialNumber(models.Model):
     serial_number = models.CharField(max_length=100, unique=True)

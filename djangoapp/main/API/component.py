@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+import itertools
 
 from ..models import *
 from ..serializers import *
@@ -99,7 +100,7 @@ def add_component(request):
         # serial_numbers = request.data.get('serial_numbers').split(',')
         description = request.data.get('description')
         consumable = request.data.get('consumable')
-        purpose_detail = request.data.get('purpose_detail')
+        unique_id = request.data.get('unique_id')
         price = request.data.get('price')
         
         machine_type, ct_created = MachineType.objects.get_or_create(name=request.data.get('machine_type'), defaults={})
@@ -117,7 +118,7 @@ def add_component(request):
             model=model,
             consumable=consumable,
             description=description,
-            purpose_detail=purpose_detail,
+            unique_id=unique_id,
             price=price,
             machine_type=machine_type,
             component_type=component_type,
@@ -150,7 +151,7 @@ def update_component(request, pk):
         # serial_numbers = request.data['serial_numbers'].split(',')
         description = request.data.get('description')
         consumable = request.data.get('consumable')
-        purpose_detail = request.data.get('purpose_detail')
+        unique_id = request.data.get('unique_id')
         price = request.data.get('price')
 
         machine_type, ct_created = MachineType.objects.get_or_create(name=request.data.get('machine_type'), defaults={})
@@ -171,7 +172,7 @@ def update_component(request, pk):
         component_obj.model = model
         component_obj.consumable = bool(consumable)
         component_obj.description = description
-        component_obj.purpose_detail = purpose_detail
+        component_obj.unique_id = unique_id
         component_obj.price = price
         component_obj.machine_type = machine_type
         component_obj.component_type = component_type
@@ -246,5 +247,64 @@ def get_item(request):
             return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+def generate_unique_id():
+    # Get the count of existing instances
+    count = SerialNumber.objects.count() + 35
+
+    # Define the characters to be used in the ID
+    characters = '0123456789abcdefghijklmnopqrstuvwxyz'
+
+    # Get the maximum possible ID based on the number of characters available
+    max_id = len(characters) ** 5
+
+    if count >= max_id:
+        raise ValueError("Maximum number of IDs reached")
+
+    # Convert count to a 4-character base36 string
+    id_string = itertools.product(characters, repeat=4)
+
+    for _ in range(count):
+        next(id_string)
+
+    return ''.join(next(id_string)).upper()
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def generate_serial_number(request):
+    try:
+        query_serializer = GenerateSerialNumberQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            component_id = query_serializer.validated_data.get('component_id')
+            quantity = query_serializer.validated_data.get('quantity')
+            print(generate_unique_id())
+            serial_numbers = SerialNumber.objects.filter(component__id = component_id).last()
+            serializer = SerialNumberSerializer(instance=serial_numbers)
+            return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def check_unique_id(request):
+    try:
+        component_id = request.data.get('component_id')
+        unique_id = request.data.get('unique_id')
+
+        if Component.objects.exclude(id = component_id).filter(unique_id = unique_id).exists():
+            return Response({"detail": "This Unique ID have been used"}, status=status.HTTP_409_CONFLICT)
+        
+        return Response({"detail": "This Unique ID is OK."}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
