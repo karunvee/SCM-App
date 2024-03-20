@@ -253,9 +253,9 @@ def get_item(request):
 
 
 
-def generate_unique_id():
+def generate_unique_id(component_id, i):
     # Get the count of existing instances
-    count = SerialNumber.objects.count() + 35
+    count = SerialNumber.objects.filter(component__pk = component_id).count() + i
 
     # Define the characters to be used in the ID
     characters = '0123456789abcdefghijklmnopqrstuvwxyz'
@@ -281,12 +281,20 @@ def generate_serial_number(request):
     try:
         query_serializer = GenerateSerialNumberQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
+            emp_id = query_serializer.validated_data.get('emp_id')
             component_id = query_serializer.validated_data.get('component_id')
             quantity = query_serializer.validated_data.get('quantity')
-            print(generate_unique_id())
-            serial_numbers = SerialNumber.objects.filter(component__id = component_id).last()
-            serializer = SerialNumberSerializer(instance=serial_numbers)
-            return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
+            member = get_object_or_404(Member, emp_id = emp_id)
+            component =  get_object_or_404(Component, pk = component_id)
+
+            sn_list = []
+            for i in range(int(quantity)):
+                txt = f"{member.production_area.detail}{component.unique_id}-0-{generate_unique_id(component_id, i+1)}"  
+                print(txt)
+                sn_list.append(txt)
+
+            return Response({"detail": "success", "data": sn_list}, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
@@ -301,10 +309,52 @@ def check_unique_id(request):
     try:
         component_id = request.data.get('component_id')
         unique_id = request.data.get('unique_id')
+        if component_id == 0:
+            if Component.objects.filter(unique_id = unique_id).exists():
+                return Response({"detail": "This Unique ID have been used"}, status=status.HTTP_409_CONFLICT)
+            return Response({"detail": "This Unique ID is OK."}, status=status.HTTP_200_OK)
+        else:
+            if Component.objects.exclude(id = component_id).filter(unique_id = unique_id).exists():
+                return Response({"detail": "This Unique ID have been used"}, status=status.HTTP_409_CONFLICT)
+            return Response({"detail": "This Unique ID is OK."}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
 
-        if Component.objects.exclude(id = component_id).filter(unique_id = unique_id).exists():
-            return Response({"detail": "This Unique ID have been used"}, status=status.HTTP_409_CONFLICT)
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def check_serial_number_list(request):
+    try:
+        item_list = request.data.get('item_list')
+        component_list = request.data.get('component_list')
+        print(item_list, component_list)
+        lists = []
+        component_counts = {}
+        component_dict = {}
         
-        return Response({"detail": "This Unique ID is OK."}, status=status.HTTP_200_OK)
+        for component in component_list:    
+            for serial_number in item_list:
+                try:
+                    sn = SerialNumber.objects.filter(serial_number=serial_number, component = Component.objects.get(pk = component))
+                    if sn.exists():
+                        component_counts[component] = component_counts.get(component, 0) + 1
+                        
+                    else:
+                        component_counts[component] = component_counts.get(component, 0)
+                        
+                except SerialNumber.DoesNotExist:
+                    continue  # Skip if the serial number doesn't exist in the database
+        print(component_counts)
+        for key, value in component_counts:
+            print(key, value)
+            # component_dict['id'] = key
+            # component_dict['qty'] = value
+            # lists.append(component_dict)
+
+        print(lists)
+
+
+        return Response({"detail": "success", "data": lists}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

@@ -151,5 +151,6 @@ class ApprovedRouteIdUpdateQuerySerializer(serializers.Serializer):
     manager_id = serializers.CharField()
 
 class GenerateSerialNumberQuerySerializer(serializers.Serializer):
+    emp_id = serializers.CharField()
     component_id = serializers.CharField()
     quantity = serializers.CharField()

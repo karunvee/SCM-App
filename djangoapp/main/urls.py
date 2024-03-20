@@ -26,6 +26,7 @@ urlpatterns = [
     
     path('component/unique/id/', check_unique_id , name='check_unique_id'),
     path('generate/item/sn/', generate_serial_number , name='generate_serial_number'),
+    path('check/item/sn/', check_serial_number_list , name='check_serial_number_list'),
 
 
 
