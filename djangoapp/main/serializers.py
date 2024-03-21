@@ -84,7 +84,12 @@ class RequestSerializer(serializers.ModelSerializer):
         fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'prepare_by','status', 'rejected',
                   'issue_date', 'complete_date']
 
-        
+class SerialNumberSerializer(serializers.ModelSerializer):
+    po = PoSerializer()
+    class Meta(object):
+        model = SerialNumber
+        fields = ['serial_number', 'po', 'issue_date']
+
 class SerialNumberWithComponentSerializer(serializers.ModelSerializer):
     component = ComponentInfoSerializer()
     class Meta(object):

@@ -47,6 +47,7 @@ class SerialNumberAdmin(admin.ModelAdmin):
     list_display = (
         'serial_number',
         'component',
+        'request',
         'po',
         'pk',
                     )

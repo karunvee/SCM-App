@@ -8,6 +8,8 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 import itertools
+import re
+from django.db.models import Max
 
 from ..models import *
 from ..serializers import *
@@ -251,11 +253,14 @@ def get_item(request):
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
 def generate_unique_id(component_id, i):
-    # Get the count of existing instances
-    count = SerialNumber.objects.filter(component__pk = component_id).count() + i
+    # Get the maximum serial number associated with the given component
+    last_serial_number = SerialNumber.objects.filter(component__pk=component_id).order_by('-serial_number').first()
+
+    if last_serial_number:
+        last_id = int(last_serial_number.serial_number[9:], 36) + i # Extract numeric part of the ID
+    else:
+        last_id = 0  # If no serial number exists yet
 
     # Define the characters to be used in the ID
     characters = '0123456789abcdefghijklmnopqrstuvwxyz'
@@ -263,16 +268,24 @@ def generate_unique_id(component_id, i):
     # Get the maximum possible ID based on the number of characters available
     max_id = len(characters) ** 5
 
-    if count >= max_id:
+    if last_id >= max_id:
         raise ValueError("Maximum number of IDs reached")
 
-    # Convert count to a 4-character base36 string
-    id_string = itertools.product(characters, repeat=4)
+    # Increment the last ID
+    next_id = last_id + 1
 
-    for _ in range(count):
-        next(id_string)
+    # Convert the incremented ID to a 5-character base36 string
+    id_string = ''
+    while next_id:
+        next_id, remainder = divmod(next_id, len(characters))
+        id_string = characters[remainder] + id_string
 
-    return ''.join(next(id_string)).upper()
+    # Pad the ID with zeros if necessary
+    id_string = id_string.zfill(5)
+
+    # Combine the component prefix with the generated ID
+    return f"SN{id_string}".upper()
+
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -290,7 +303,7 @@ def generate_serial_number(request):
 
             sn_list = []
             for i in range(int(quantity)):
-                txt = f"{member.production_area.detail}{component.unique_id}-0-{generate_unique_id(component_id, i+1)}"  
+                txt = f"{member.production_area.detail}{component.unique_id}-0-{generate_unique_id(component_id, i)}"  
                 print(txt)
                 sn_list.append(txt)
 
@@ -298,6 +311,7 @@ def generate_serial_number(request):
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+        print(str(e))
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -328,16 +342,17 @@ def check_serial_number_list(request):
     try:
         item_list = request.data.get('item_list')
         component_list = request.data.get('component_list')
-        print(item_list, component_list)
+    
+        item_used = []
         lists = []
         component_counts = {}
-        component_dict = {}
-        
+
         for component in component_list:    
             for serial_number in item_list:
                 try:
                     sn = SerialNumber.objects.filter(serial_number=serial_number, component = Component.objects.get(pk = component))
                     if sn.exists():
+                        item_used.append(serial_number)
                         component_counts[component] = component_counts.get(component, 0) + 1
                         
                     else:
@@ -345,16 +360,16 @@ def check_serial_number_list(request):
                         
                 except SerialNumber.DoesNotExist:
                     continue  # Skip if the serial number doesn't exist in the database
-        print(component_counts)
-        for key, value in component_counts:
-            print(key, value)
-            # component_dict['id'] = key
-            # component_dict['qty'] = value
-            # lists.append(component_dict)
 
-        print(lists)
+            lists.append({
+                "id": component,
+                "qty": component_counts[component]
+            })
+        s = set(item_used)
+        diff = [x for x in item_list if x not in s]
+        # print(diff)
+        # print(lists)
 
-
-        return Response({"detail": "success", "data": lists}, status=status.HTTP_200_OK)
+        return Response({"detail": "success", "data": lists, "diff": diff}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

@@ -120,23 +120,6 @@ def logout_user(request):
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
-def check_in(request):
-    query_serializer = EmployeeIdQuerySerializer(data = request.query_params)
-
-    if query_serializer.is_valid():
-        emp_id = query_serializer.validated_data.get('emp_id')
-        user = Member.objects.get(emp_id = emp_id)
-        if user:
-            serializer = MemberSerializer(instance = user)
-            token, create = Token.objects.get_or_create(user=user)
-
-            return Response({"detail": "success", "data": serializer.data, "token": token.key}, status=status.HTTP_200_OK)
-        
-        return Response({"detail": "This employee id not found"}, status=status.HTTP_404_NOT_FOUND)
-    
-    return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['GET'])
 def basic_info(request):

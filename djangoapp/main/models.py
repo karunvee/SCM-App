@@ -121,15 +121,6 @@ class PO(models.Model):
     def __str__(self):
         return self.po_number 
 
-class SerialNumber(models.Model):
-    serial_number = models.CharField(max_length=100, unique=True)
-    component = models.ForeignKey(Component, on_delete=models.CASCADE, related_name='serial_numbers')
-    po = models.ForeignKey(PO, on_delete=models.CASCADE)
-    issue_date = models.DateTimeField(auto_now_add=True)
-    def __str__(self):
-        return self.serial_number 
-    
-
 class HistoryTrading(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
@@ -138,16 +129,6 @@ class HistoryTrading(models.Model):
 
     def __str__(self):
         return self.member.name 
-
-class WatchList(models.Model):
-    member = models.ForeignKey(Member, on_delete=models.CASCADE)
-    serial_number = models.ForeignKey(SerialNumber, on_delete=models.CASCADE)
-    issue_date = models.DateTimeField(auto_now_add=True)
-    warning_period = models.IntegerField(default = 7)
-    alert_period = models.IntegerField(default = 14)
-
-    def __str__(self):
-        return self.serial_number.serial_number 
 
     
 class OrderTacking(models.Model):
@@ -175,7 +156,7 @@ class Request(models.Model):
     status =  models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])
     rejected = models.BooleanField(default= False)
     issue_date = models.DateTimeField(auto_now_add=True)
-    complete_date = models.DateTimeField(default=timezone.now)
+    complete_date = models.DateTimeField(blank = True)
     components = models.ManyToManyField(Component, through='RequestComponentRelation')
 
     def update_status_to_next(self):
@@ -203,3 +184,13 @@ class RequestComponentRelation(models.Model):
     def __str__(self):
         return f"{self.component.name}"
     
+class SerialNumber(models.Model):
+    serial_number = models.CharField(max_length=100, unique=True)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE, related_name='serial_numbers')
+    po = models.ForeignKey(PO, on_delete=models.CASCADE)
+    issue_date = models.DateTimeField(auto_now_add=True)
+
+    request = models.ForeignKey(Request, on_delete=models.SET_NULL, blank=True, null=True)
+
+    def __str__(self):
+        return self.serial_number 

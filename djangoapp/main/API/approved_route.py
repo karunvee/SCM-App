@@ -1,4 +1,6 @@
 import json
+from datetime import datetime
+import pytz
 from django.shortcuts import render, redirect, get_object_or_404
 
 from rest_framework.authtoken.models import Token
@@ -85,6 +87,7 @@ def approval_list(request):
                         'component_component_type' : reqRelIndex.component.component_type.name,
                         'component_image' : reqRelIndex.component.image_url,
                         'qty' : reqRelIndex.qty,
+                        'serial_numbers': []
                     })
 
             return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
@@ -101,6 +104,7 @@ def approved_order(request):
         request_id = request.data.get('request_id')
         emp_id = request.data.get('emp_id')
         method = request.data.get('method')
+        serial_numbers = request.data.get('serial_numbers')
        
         member = get_object_or_404(Member, emp_id = emp_id)
 
@@ -115,16 +119,28 @@ def approved_order(request):
             if method == 'approve':
                 if not request_obj.get().update_status_to_next():
                     return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif method == 'success':
+                now = datetime.now(pytz.timezone('Asia/Bangkok'))
+                SerialNumber.objects.filter(serial_number__in = serial_numbers).update(request = request_obj.get())
+                request_obj.update(complete_date = datetime.now())
+                if not request_obj.get().update_status_to_next():
+                    return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
+                
             elif method == 'reject':
                 request_obj.update(rejected = True)
+
             elif method == 'reset':
                 request_obj.update(rejected = False)
+
             else:
                 request_obj.delete()
+
             return Response({"detail": "success"}, status=status.HTTP_200_OK)
             
         return Response({"detail": "Permission denied"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+        print(str(e))
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['GET'])
@@ -147,7 +163,9 @@ def preparing_list(request):
                     'component_machine_type' : reqRelIndex.component.machine_type.name,
                     'component_component_type' : reqRelIndex.component.component_type.name,
                     'component_image' : reqRelIndex.component.image_url,
+                    'location' : reqRelIndex.component.location.name,
                     'qty' : reqRelIndex.qty,
+                    'serial_numbers': []
                 })
 
         return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
