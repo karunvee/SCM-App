@@ -136,6 +136,7 @@ class HistoryTradingAdmin(admin.ModelAdmin):
     list_display = (
         'requester',
         'request_id',
+        'gr_qty', 'gi_qty',
         'pk',
         'component',
         'serial_numbers',

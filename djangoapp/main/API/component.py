@@ -226,10 +226,11 @@ def delete_component(request, pk):
 def add_item(request):
     try:
         component_id = request.data.get('component_id')
-        print(request.data.get('serial_numbers'))
+        # print(request.data.get('serial_numbers'))
         serial_numbers = request.data.get('serial_numbers')
         po_number = request.data.get('po_number')
-
+        emp_id = request.data.get('emp_id')
+        trader = get_object_or_404(Member, emp_id = emp_id)
         component_obj = get_object_or_404(Component, pk = component_id)
         
         serial_container = []
@@ -240,8 +241,21 @@ def add_item(request):
         SerialNumber.objects.bulk_create(serial_container)
 
         component_obj.quantity = SerialNumber.objects.filter(component = component_obj).count()
-        print(component_obj.quantity)
+        # print(component_obj.quantity)
         component_obj.save()
+
+        HistoryTrading.objects.create(
+                    requester = "",
+                    staff_approved = "",
+                    supervisor_approved = "",
+                    trader = trader.name,
+                    gr_qty = len(serial_numbers),
+                    gi_qty = 0,
+                    purpose_detail="Add",
+                    component=component_obj,
+                    request_id = "",
+                    serial_numbers = serial_numbers
+            )
 
         return Response({"detail": f"Added items to PO: {po_number}"}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -258,8 +272,8 @@ def get_item(request):
             component_id = query_serializer.validated_data.get('component_id')
             
             serial_number_obj = SerialNumber.objects.filter(component__pk = component_id)
-            serializer = SerialNumberSerializer(instance = serial_number_obj, many=True)
-
+            serializer = SerialNumberWithStrPoSerializer(instance = serial_number_obj, many=True)
+            print(serializer.data)
             return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
@@ -270,15 +284,16 @@ def get_item(request):
 def generate_unique_id(component_id, i, snExist):
     
     # if not snExist:
-    #     last_id = i - 1
+    #     last_id = i
     # else:
     # Get the maximum serial number associated with the given component
     last_serial_number = SerialNumber.objects.filter(component__pk=component_id).order_by('-serial_number').first()
 
     if last_serial_number:
+        print(last_serial_number.serial_number[9:])
         last_id = int(last_serial_number.serial_number[9:], 36) + i # Extract numeric part of the ID
     else:
-        last_id = 0  # If no serial number exists yet
+        last_id = i  # If no serial number exists yet
 
     # Define the characters to be used in the ID
     characters = '0123456789abcdefghijklmnopqrstuvwxyz'
@@ -302,7 +317,7 @@ def generate_unique_id(component_id, i, snExist):
     id_string = id_string.zfill(5)
 
     # Combine the component prefix with the generated ID
-    return f"SN{id_string}".upper()
+    return f"{id_string}".upper()
 
 
 @api_view(['GET'])
@@ -319,11 +334,11 @@ def generate_serial_number(request):
             member = get_object_or_404(Member, emp_id = emp_id)
             component =  get_object_or_404(Component, pk = component_id)
 
-            # snExist = SerialNumber.objects.filter(component__pk=component_id).exists()
+            snExist = SerialNumber.objects.filter(component__pk=component_id).exists()
 
             sn_list = []
             for i in range(int(quantity)):
-                txt = f"{member.production_area.detail}{component.unique_id}-0-{generate_unique_id(component_id, i, '')}"  
+                txt = f"{member.production_area.detail}{component.unique_id}-0-{generate_unique_id(component_id, i, snExist)}"  
                 print(txt)
                 sn_list.append(txt)
 

@@ -44,3 +44,23 @@ def check_po(request):
             return Response({"detail": f"Failure, PO not found."}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_grgi(request):
+    try:
+        query_serializer = ProdAreaNameQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            production_area_name = query_serializer.validated_data.get('production_area_name')
+            
+            pdAreaObj = HistoryTrading.objects.filter(component__production_area__prod_area_name = production_area_name)
+            print(production_area_name)
+            print(pdAreaObj)
+            serializer = HistoryTradingSerializer(instance=pdAreaObj, many=True)
+            return Response({"detail": "success", "data" : serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

@@ -16,7 +16,7 @@ from .serializers import *
 
 from .API.component import *
 from .API.account import *
-from .API.po_api import *
+from .API.general import *
 from .API.cart_request import *
 from .API.approved_route import *
 
@@ -134,82 +134,3 @@ def basic_info(request):
         'machine_type_list': m_serializers.data,
     }
     return Response(context)
-    
-@api_view(['POST'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def pick_up(request):
-    historyTrading = []
-    component_list = []
-    consumable_list = []
-    watch_list = []
-    try:
-        emp_id = request.data.get('emp_id')
-        serial_numbers = request.data.get('serial_numbers', [])
-
-        member_obj = get_object_or_404(Member, emp_id = emp_id)
-
-        for sn in serial_numbers:
-            serial_number_obj = SerialNumber.objects.filter(serial_number = sn)
-            if serial_number_obj.exists():
-
-                component_obj = get_object_or_404(SerialNumber, serial_number = sn).component
-
-                for com_index in component_list:
-                    if com_index.get('component') == component_obj:
-                        com_index['sn'].append(sn)
-                        # print("add", component_list)
-
-                if not any(d.get('component') == component_obj for d in component_list):
-                    component_list.append({
-                        'component': component_obj,
-                        'sn': [sn]
-                    })
-                    # print("new", component_list)
-                if component_obj.consumable:
-                    consumable_list.append(sn)
-                else:
-                    watch_list.append(WatchList(
-                        member = member_obj,
-                        serial_numbers = serial_number_obj,
-                    ))
-
-
-        SerialNumber.objects.filter(serial_number__in=consumable_list).delete()
-        for component in component_list:
-            qty = SerialNumber.objects.filter(component = component['component']).count()
-            Component.objects.filter(pk = component['component'].id).update(quantity = qty)
-            historyTrading.append(
-                HistoryTrading(
-                    member = member_obj,
-                    component = component.get('component'),
-                    serial_numbers = ', '.join(component.get('sn'))
-                ))
-        
-        HistoryTrading.objects.bulk_create(historyTrading)
-        WatchList.objects.bulk_create(watch_list)
-
-        return Response({"detail": "success"}, status=status.HTTP_200_OK)
-
-    except Exception as e:
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def get_history(request):
-    query_serializer = EmployeeIdQuerySerializer(data = request.query_params)
-
-    if query_serializer.is_valid():
-        emp_id = query_serializer.validated_data.get('emp_id')
-
-        history = HistoryTrading.objects.filter(member__emp_id = emp_id)
-        if history.exists():
-            historyData = HistoryTradingSerializer(instance=history, many=True)
-
-            return Response({"detail": "success", "data": historyData.data}, status=status.HTTP_200_OK)
-        
-        return Response({"detail": "This employee does't have any history."}, status=status.HTTP_204_NO_CONTENT)
-    
-    return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
-

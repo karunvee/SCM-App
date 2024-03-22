@@ -68,7 +68,7 @@ def my_request(request):
         query_serializer = RequestEmployeeIdQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
             emp_id = query_serializer.validated_data.get('emp_id')
-            requests = Request.objects.filter(requester__emp_id = emp_id)
+            requests = Request.objects.exclude(status='PickUp').filter(requester__emp_id = emp_id)
             requests_serializer = RequestSerializer(instance=requests, many=True)
             # Custom Serializer Data
             for req in requests_serializer.data:
@@ -110,36 +110,3 @@ def delete_my_request(request):
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def check_in(request):
-    query_serializer = RequestQuerySerializer(data = request.query_params)
-
-    if query_serializer.is_valid():
-        request_id = query_serializer.validated_data.get('request_id')
-        requests = Request.objects.filter(id = request_id)
-
-        requests_serializer = RequestSerializer(instance = requests, many=True)
-        for req in requests_serializer.data:
-            reqRel = RequestComponentRelation.objects.filter(request__id = req['id'])
-            req['components'] = []
-            for reqRelIndex in reqRel:
-                serial_numbers = SerialNumber.objects.filter(request__id = req['id'], component__pk = reqRelIndex.component.pk)
-                serializers_serial_numbers = SerialNumberSerializer(instance=serial_numbers, many=True)
-                req['components'].append({
-                    'id': reqRelIndex.id,
-                    'component_id' : reqRelIndex.component.pk,
-                    'component_name' : reqRelIndex.component.name,
-                    'component_model' : reqRelIndex.component.model,
-                    'component_machine_type' : reqRelIndex.component.machine_type.name,
-                    'component_component_type' : reqRelIndex.component.component_type.name,
-                    'component_image' : reqRelIndex.component.image_url,
-                    'qty' : reqRelIndex.qty,
-                    'serial_numbers': serializers_serial_numbers.data
-                })
-
-        return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
-        
-    
-    return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)

@@ -81,11 +81,22 @@ class RequestSerializer(serializers.ModelSerializer):
     # components = ComponentWithoutSerialsSerializer(many=True, read_only=True)
     class Meta(object):
         model = Request
-        fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'prepare_by','status', 'rejected',
+        fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'prepare_by','status', 'rejected', 'purpose_detail',
                   'issue_date', 'complete_date']
+
+class SerialNumberOnlySnSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = SerialNumber
+        fields = ['serial_number']
 
 class SerialNumberSerializer(serializers.ModelSerializer):
     po = PoSerializer()
+    class Meta(object):
+        model = SerialNumber
+        fields = ['serial_number', 'po', 'issue_date']
+
+class SerialNumberWithStrPoSerializer(serializers.ModelSerializer):
+    po = serializers.StringRelatedField()
     class Meta(object):
         model = SerialNumber
         fields = ['serial_number', 'po', 'issue_date']
@@ -108,7 +119,7 @@ class MemberSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class HistoryTradingSerializer(serializers.ModelSerializer):
-    component = ComponentInfoSerializer()
+    component = serializers.StringRelatedField()
     class Meta(object):
         model = HistoryTrading
         fields = '__all__'
@@ -159,3 +170,6 @@ class GenerateSerialNumberQuerySerializer(serializers.Serializer):
     emp_id = serializers.CharField()
     component_id = serializers.CharField()
     quantity = serializers.CharField()
+
+class ProdAreaNameQuerySerializer(serializers.Serializer):
+    production_area_name = serializers.CharField()

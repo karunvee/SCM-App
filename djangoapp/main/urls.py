@@ -27,6 +27,7 @@ urlpatterns = [
     path('component/unique/id/', check_unique_id , name='check_unique_id'),
     path('generate/item/sn/', generate_serial_number , name='generate_serial_number'),
     path('check/item/sn/', check_serial_number_list , name='check_serial_number_list'),
+    path('my/request/pickup/', pick_up , name='pick_up'),
 
 
 
@@ -36,10 +37,6 @@ urlpatterns = [
     path('component/list/information/', info_component_list , name='info_component_list'),
     path('add/item/serial_number/', add_item , name='add_item'),
     path('serial_number/list/', get_item , name='get_item'),
-
-
-    path('component/pick_up/', pick_up , name='pick_up'),
-    path('component/get_history/', get_history , name='check_in'),
     
     path('account/list/', get_account , name='get_account'),
     path('account/role/update/', set_account_role , name='set_account_role'),
@@ -47,5 +44,7 @@ urlpatterns = [
 
     path('add/po/number/', add_po, name='add_po'),
     path('check/po/number/', check_po, name='check_po'),
+
+    path('history/gr/gi/', get_grgi, name='get_grgi'),
     
 ]

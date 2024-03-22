@@ -27,7 +27,7 @@ class CustomUserManager(BaseUserManager):
 class ProductionArea(models.Model):
     prod_area_name = models.CharField(max_length = 255, unique=True)
     description = models.CharField(max_length = 255)
-    detail = models.CharField(max_length = 255)
+    detail = models.CharField(max_length = 3)
 
     def __str__(self):
         return self.prod_area_name
@@ -189,15 +189,19 @@ class SerialNumber(models.Model):
         return self.serial_number 
 
 class HistoryTrading(models.Model):
-    requester = models.CharField(max_length = 100)
-    staff_approved = models.CharField(max_length = 100)
-    supervisor_approved = models.CharField(max_length = 100)
+    requester = models.CharField(max_length = 100, blank=True, null=True)
+    staff_approved = models.CharField(max_length = 100, blank=True, null=True)
+    supervisor_approved = models.CharField(max_length = 100, blank=True, null=True)
     trader = models.CharField(max_length = 100)
 
+    gr_qty = models.IntegerField(default=0)
+    gi_qty = models.IntegerField(default=0)
+    purpose_detail = models.TextField()
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
     request_id = models.CharField(max_length = 250)
-    serial_numbers = models.TextField()
+    serial_numbers = models.TextField(default='')
+
     issue_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.issue_date
+        return self.requester
