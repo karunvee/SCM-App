@@ -108,7 +108,6 @@ class MemberSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class HistoryTradingSerializer(serializers.ModelSerializer):
-    member = serializers.StringRelatedField()
     component = ComponentInfoSerializer()
     class Meta(object):
         model = HistoryTrading
@@ -134,6 +133,7 @@ class ApprovedRouteSerializer(serializers.ModelSerializer):
 class ComponentFilterQuerySerializer(serializers.Serializer):
     component_type_content = serializers.CharField()
     machine_type_content = serializers.CharField()
+    production_name = serializers.CharField()
 
 class EmployeeIdQuerySerializer(serializers.Serializer):
     emp_id = serializers.CharField()

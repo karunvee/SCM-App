@@ -171,3 +171,27 @@ def preparing_list(request):
         return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def pick_up(request):
+    try:
+        request_id = request.data.get('request_id')
+        emp_name = request.data.get('emp_name')
+        request_obj = get_object_or_404(Request, id = request_id)
+        if not request_obj.update_status_to_next():
+            return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
+        # HistoryTrading.objects.create(
+        #     requester = request_obj.requester.username,
+        #     staff_approved = request_obj.staff_approved.username,
+        #     supervisor_approved = request_obj.supervisor_approved.username,
+        #     trader = emp_name,
+
+
+        # )
+
+        return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

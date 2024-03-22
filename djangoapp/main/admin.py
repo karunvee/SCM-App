@@ -132,9 +132,10 @@ class ApprovedRouteAdmin(admin.ModelAdmin):
 admin.site.register(ApprovedRoute, ApprovedRouteAdmin)
 
 class HistoryTradingAdmin(admin.ModelAdmin):
-    search_fields = ['member__username', 'member__emp_id', 'component__name', 'component__model']
+    search_fields = ['requester', 'component__name', 'component__model', 'request_id']
     list_display = (
-        'member',
+        'requester',
+        'request_id',
         'pk',
         'component',
         'serial_numbers',

@@ -25,7 +25,7 @@ class CustomUserManager(BaseUserManager):
         return user
 
 class ProductionArea(models.Model):
-    prod_area_name = models.CharField(max_length = 255)
+    prod_area_name = models.CharField(max_length = 255, unique=True)
     description = models.CharField(max_length = 255)
     detail = models.CharField(max_length = 255)
 
@@ -104,6 +104,7 @@ class Component(models.Model):
     issue_date = models.DateTimeField(auto_now_add=True)
     consumable = models.BooleanField(default= True)
 
+    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE)
     @property
     def image_url(self):
         if self.image:
@@ -121,15 +122,6 @@ class PO(models.Model):
     def __str__(self):
         return self.po_number 
 
-class HistoryTrading(models.Model):
-    member = models.ForeignKey(Member, on_delete=models.CASCADE)
-    component = models.ForeignKey(Component, on_delete=models.CASCADE)
-    serial_numbers = models.TextField()
-    issue_date = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.member.name 
-
     
 class OrderTacking(models.Model):
     STATUS = (('Processing', 'Processing'), ('PR', 'PR'), ('PO', 'PO'), ('Shipping', 'Shipping'), ('Good Received', 'Good Received'), ('In-House', 'In-House'))
@@ -145,7 +137,7 @@ class OrderTacking(models.Model):
         return self.id
 
 class Request(models.Model):
-    STATUS = (('Requested', 'Requested'), ('Staff', 'Staff'), ('Manager', 'Manager'), ('Preparing', 'Preparing'), ('Success', 'Success'))
+    STATUS = (('Requested', 'Requested'), ('Staff', 'Staff'), ('Manager', 'Manager'), ('Preparing', 'Preparing'), ('Success', 'Success'), ('PickUp', 'PickUp'))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     requester = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='requester')
     staff_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_approved')
@@ -157,6 +149,7 @@ class Request(models.Model):
     rejected = models.BooleanField(default= False)
     issue_date = models.DateTimeField(auto_now_add=True)
     complete_date = models.DateTimeField(blank = True)
+    pickup_date = models.DateTimeField(blank = True)
     components = models.ManyToManyField(Component, through='RequestComponentRelation')
 
     def update_status_to_next(self):
@@ -194,3 +187,17 @@ class SerialNumber(models.Model):
 
     def __str__(self):
         return self.serial_number 
+
+class HistoryTrading(models.Model):
+    requester = models.CharField(max_length = 100)
+    staff_approved = models.CharField(max_length = 100)
+    supervisor_approved = models.CharField(max_length = 100)
+    trader = models.CharField(max_length = 100)
+
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    request_id = models.CharField(max_length = 250)
+    serial_numbers = models.TextField()
+    issue_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.issue_date

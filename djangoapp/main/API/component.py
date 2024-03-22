@@ -16,12 +16,19 @@ from ..serializers import *
 
 @api_view(['GET'])
 def component_list(request):
-    component_list = Component.objects.all()
-    serializers = ComponentSerializer(instance=component_list, many=True)
-    context = {
-        'component_list': serializers.data
-    }
-    return Response(context)
+    try:
+        query_serializer = ComponentFilterQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            production_name = query_serializer.validated_data.get('production_name')
+            component_list = Component.objects.filter(production_area__prod_area_name = production_name)
+            serializers = ComponentSerializer(instance=component_list, many=True)
+
+            return Response({"detail": "success", "component_list": serializers.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -32,8 +39,10 @@ def component_filter(request):
         if query_serializer.is_valid():
             component_type_content = query_serializer.validated_data.get('component_type_content')
             machine_type_content = query_serializer.validated_data.get('machine_type_content')
+            production_name = query_serializer.validated_data.get('production_name')
+            print(production_name)
             print('::', component_type_content, machine_type_content)
-            component_obj = Component.objects.all()
+            component_obj = Component.objects.filter(production_area__prod_area_name = production_name)
             if component_type_content != 'All':   
                 component_obj = component_obj.filter(component_type__name = component_type_content)
             if machine_type_content != 'All':
@@ -104,11 +113,13 @@ def add_component(request):
         consumable = request.data.get('consumable')
         unique_id = request.data.get('unique_id')
         price = request.data.get('price')
-        
-        machine_type, ct_created = MachineType.objects.get_or_create(name=request.data.get('machine_type'), defaults={})
-        component_type, ct_created = ComponentType.objects.get_or_create(name=request.data.get('component_type'), defaults={})
-        department, d_created = Department.objects.get_or_create(name=request.data.get('department'), defaults={})
-        location, l_created = Location.objects.get_or_create(name=request.data.get('location'), defaults={})
+
+        machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'))
+        component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
+        department = get_object_or_404(Department, name=request.data.get('department'))
+        location = get_object_or_404(Location, name=request.data.get('location'))
+        production_area = get_object_or_404(ProductionArea, prod_area_name=request.data.get('production_name'))
+
         quantity = request.data.get('quantity')
         quantity_warning = request.data.get('quantity_warning')
         quantity_alert = request.data.get('quantity_alert')
@@ -129,6 +140,7 @@ def add_component(request):
             quantity=quantity,
             quantity_warning=quantity_warning,
             quantity_alert=quantity_alert,
+            production_area=production_area
             )
 
             serializer = ComponentSerializer(component_obj)
@@ -136,6 +148,7 @@ def add_component(request):
         else:
             return Response({"detail": "Failure, duplicate data"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+        print(str(e))
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['PUT'])
@@ -189,6 +202,7 @@ def update_component(request, pk):
 
         return Response({"detail": "%s was update." % name}, status=status.HTTP_200_OK)
     else:
+        print(str(e))
         return Response({"detail": "This data doesn't contain in the database"}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -253,7 +267,11 @@ def get_item(request):
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def generate_unique_id(component_id, i):
+def generate_unique_id(component_id, i, snExist):
+    
+    # if not snExist:
+    #     last_id = i - 1
+    # else:
     # Get the maximum serial number associated with the given component
     last_serial_number = SerialNumber.objects.filter(component__pk=component_id).order_by('-serial_number').first()
 
@@ -301,9 +319,11 @@ def generate_serial_number(request):
             member = get_object_or_404(Member, emp_id = emp_id)
             component =  get_object_or_404(Component, pk = component_id)
 
+            # snExist = SerialNumber.objects.filter(component__pk=component_id).exists()
+
             sn_list = []
             for i in range(int(quantity)):
-                txt = f"{member.production_area.detail}{component.unique_id}-0-{generate_unique_id(component_id, i)}"  
+                txt = f"{member.production_area.detail}{component.unique_id}-0-{generate_unique_id(component_id, i, '')}"  
                 print(txt)
                 sn_list.append(txt)
 
