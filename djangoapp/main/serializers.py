@@ -67,6 +67,10 @@ class ComponentInfoSerializer(serializers.ModelSerializer):
         model = Component
         fields = '__all__'
 
+class ComponentImageSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = Component
+        fields = ['id', 'name', 'model', 'image']
         
 class RequestComponentRelationSerializer(serializers.ModelSerializer):
     class Meta(object):
@@ -119,9 +123,16 @@ class MemberSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class HistoryTradingSerializer(serializers.ModelSerializer):
-    component = serializers.StringRelatedField()
+    component = ComponentImageSerializer()
+    po_number = PoSerializer()
     class Meta(object):
         model = HistoryTrading
+        fields = '__all__'
+
+class PoSerializer(serializers.ModelSerializer):
+    production_area = serializers.StringRelatedField()
+    class Meta(object):
+        model = PO
         fields = '__all__'
 
 class OrderTackingSerializer(serializers.ModelSerializer):

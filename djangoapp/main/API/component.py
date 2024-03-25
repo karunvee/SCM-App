@@ -228,7 +228,8 @@ def add_item(request):
         component_id = request.data.get('component_id')
         # print(request.data.get('serial_numbers'))
         serial_numbers = request.data.get('serial_numbers')
-        po_number = request.data.get('po_number')
+        po = PO.objects.get(po_number = request.data.get('po_number'))
+
         emp_id = request.data.get('emp_id')
         trader = get_object_or_404(Member, emp_id = emp_id)
         component_obj = get_object_or_404(Component, pk = component_id)
@@ -237,7 +238,7 @@ def add_item(request):
         for sn in serial_numbers:
             if SerialNumber.objects.filter(serial_number = sn).exists():
                 return Response({"detail": f"Duplicate data, '{sn}' already exist in table."}, status=status.HTTP_409_CONFLICT)
-            serial_container.append(SerialNumber(serial_number=sn, component=component_obj, po = PO.objects.get(po_number = po_number)))
+            serial_container.append(SerialNumber(serial_number=sn, component=component_obj, po = po))
         SerialNumber.objects.bulk_create(serial_container)
 
         component_obj.quantity = SerialNumber.objects.filter(component = component_obj).count()
@@ -254,10 +255,11 @@ def add_item(request):
                     purpose_detail="Add",
                     component=component_obj,
                     request_id = "",
+                    po_number = po,
                     serial_numbers = serial_numbers
             )
 
-        return Response({"detail": f"Added items to PO: {po_number}"}, status=status.HTTP_200_OK)
+        return Response({"detail": f"Added items to PO: {request.data.get('po_number')}"}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 

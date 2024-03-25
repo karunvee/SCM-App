@@ -216,7 +216,6 @@ def check_in(request):
 @permission_classes([IsAuthenticated])
 def pick_up(request):
     try:
-        # HistoryTrading.objects.all().delete()
         request_id = request.data.get('request_id')
         emp_name = request.data.get('emp_name')
 
@@ -248,14 +247,8 @@ def pick_up(request):
             return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
         
         HistoryTrading.objects.bulk_create(history_items)
-        # component_relate.delete()
-
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
         print(str(e))
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-# def HtDelete():
-#     HistoryTrading.objects.all().delete()

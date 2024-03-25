@@ -42,9 +42,12 @@ urlpatterns = [
     path('account/role/update/', set_account_role , name='set_account_role'),
     path('account/delete/', delete_account , name='delete_account'),
 
-    path('add/po/number/', add_po, name='add_po'),
+
     path('check/po/number/', check_po, name='check_po'),
 
     path('history/gr/gi/', get_grgi, name='get_grgi'),
+    path('po/number/history/', get_po, name='get_po'),
+    path('po/number/add/', add_po, name='add_po'),
+    path('po/number/<str:pn>/', mod_po, name='mod_po'),
     
 ]

@@ -118,6 +118,7 @@ class Component(models.Model):
 class PO(models.Model):
     po_number = models.CharField(max_length = 250, blank = True)
     issue_date = models.DateTimeField(auto_now_add=True)
+    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self):
         return self.po_number 
@@ -198,7 +199,10 @@ class HistoryTrading(models.Model):
     gi_qty = models.IntegerField(default=0)
     purpose_detail = models.TextField()
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
-    request_id = models.CharField(max_length = 250)
+
+    request_id = models.CharField(max_length = 200, blank=True)
+    po_number = models.ForeignKey(PO, on_delete=models.SET_NULL, blank=True, null=True)
+
     serial_numbers = models.TextField(default='')
 
     issue_date = models.DateTimeField(auto_now_add=True)

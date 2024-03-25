@@ -17,10 +17,12 @@ from ..serializers import *
 def add_po(request):
     try:
         po_number = request.data.get('po_number')
+        prod_area_name = request.data.get('prod_area_name')
         po_obj = PO.objects.filter(po_number = po_number)
         if not po_obj.exists():
             new_po = PO.objects.create(
-                po_number = po_number
+                po_number = po_number,
+                production_area = get_object_or_404(ProductionArea, prod_area_name = prod_area_name),
             )
             serializer = PoSerializer(new_po)
             return Response({"detail": f"Successfully added {po_number}.", "data": serializer.data}, status=status.HTTP_201_CREATED)
@@ -64,3 +66,42 @@ def get_grgi(request):
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_po(request):
+    try:
+        query_serializer = ProdAreaNameQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            production_area_name = query_serializer.validated_data.get('production_area_name')
+            
+            poObj = PO.objects.filter(production_area__prod_area_name = production_area_name)
+            serializer = PoSerializer(instance=poObj, many=True)
+            return Response({"detail": "success", "data" : serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+@api_view(['PUT', 'DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def mod_po(request, pn):
+    try:
+        po = PO.objects.filter(po_number = pn)
+        if request.method == 'PUT':
+            new_po_number = request.data.get('new_po_number')
+            po.update(po_number = new_po_number)
+            return Response({"detail": "success"}, status=status.HTTP_200_OK)
+        elif request.method == 'DELETE':
+            po.delete()
+            return Response({"detail": "success"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": "Method is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+def deleteAll():
+    HistoryTrading.objects.all().delete()
