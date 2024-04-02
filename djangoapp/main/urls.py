@@ -9,7 +9,10 @@ urlpatterns = [
     path('account/pd/area/', get_production_area , name='get_production_area'),
     path('approved/route/info/', get_approved_route , name='get_approved_route'),    
 
-    path('basic_info/list/', basic_info , name='basic_info'),
+    path('basic_info/list/<str:pda>/', basic_info , name='basic_info'),
+    path('location/list/', add_location , name='add_location'),
+    path('machine/type/list/', add_machine_type , name='add_machine_type'),
+
     path('storage/list/', component_list , name='component_list'),
     path('storage/list/filter/', component_filter , name='component_filter'),
     path('storage/item/info/', component_get_one , name='component_get_one'),
@@ -49,5 +52,4 @@ urlpatterns = [
     path('po/number/history/', get_po, name='get_po'),
     path('po/number/add/', add_po, name='add_po'),
     path('po/number/<str:pn>/', mod_po, name='mod_po'),
-    
 ]

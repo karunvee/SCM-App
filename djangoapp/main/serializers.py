@@ -14,12 +14,12 @@ class ComponentTypeSerializer(serializers.ModelSerializer):
 class LocationSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Location
-        fields = ['name']
+        fields = ['pk', 'name']
 
 class MachineTypeSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = MachineType
-        fields = ['name']
+        fields = ['pk', 'name']
 
 class PoSerializer(serializers.ModelSerializer):
     class Meta(object):

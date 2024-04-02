@@ -70,6 +70,7 @@ class Department(models.Model):
         return self.name
     
 class Location(models.Model):
+    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length = 250)
     def __str__(self):
         return self.name
@@ -80,6 +81,7 @@ class ComponentType(models.Model):
         return self.name
 
 class MachineType(models.Model):
+    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length = 250)
     def __str__(self):
         return self.name

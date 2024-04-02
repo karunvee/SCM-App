@@ -10,6 +10,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import F
 
 from ..models import *
 from ..serializers import *
@@ -243,6 +244,11 @@ def pick_up(request):
                     request_id = request_obj.id,
                     serial_numbers = serial_numbers
                 )) 
+            
+            Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
+            serial_numbers_obj.delete()
+            cr.delete()
+
         if not request_obj.update_status_to_next():
             return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
         

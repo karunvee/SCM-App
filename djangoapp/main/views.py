@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-
+from django.db.models import Q
 import time
 import ldap3
 
@@ -122,11 +122,21 @@ def logout_user(request):
 
 
 @api_view(['GET'])
-def basic_info(request):
+def basic_info(request, pda):
+    prodArea = ProductionArea.objects.get(prod_area_name = pda)
     ct_serializers = ComponentTypeSerializer(instance=ComponentType.objects.all(), many=True)
     d_serializers = DepartmentSerializer(instance=Department.objects.all(), many=True)
-    l_serializers = LocationSerializer(instance=Location.objects.all(), many=True)
-    m_serializers = MachineTypeSerializer(instance=MachineType.objects.all(), many=True)
+
+    locations = Location.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea))
+    l_serializers = LocationSerializer(
+        instance=locations, 
+        many=True
+        )
+    machineTypes = MachineType.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea))
+    m_serializers = MachineTypeSerializer(
+        instance=machineTypes, 
+        many=True
+        )
     context = {
         'component_type_list': ct_serializers.data,
         'department_list': d_serializers.data,
@@ -134,3 +144,45 @@ def basic_info(request):
         'machine_type_list': m_serializers.data,
     }
     return Response(context)
+
+
+@api_view(['POST', 'PUT'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def add_location(request):
+    try:
+        location_name = request.data.get('name')
+        if request.method == 'POST':
+            prod_area_name = request.data.get('prod_area_name')
+            Location.objects.create(
+                name = location_name,
+                production_area = get_object_or_404(ProductionArea, prod_area_name = prod_area_name)
+            )
+        elif request.method == 'PUT':
+            id = request.data.get('id')
+            Location.objects.filter(id = id).update(name = location_name)
+
+        return Response({"detail": "success"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['POST', 'PUT'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def add_machine_type(request):
+    try:
+        machine_type_name = request.data.get('name')
+        if request.method == 'POST':
+            prod_area_name = request.data.get('prod_area_name')
+            print(prod_area_name)
+            MachineType.objects.create(
+                name = machine_type_name,
+                production_area = get_object_or_404(ProductionArea, prod_area_name = prod_area_name)
+            )
+        elif request.method == 'PUT':
+            id = request.data.get('id')
+            MachineType.objects.filter(id = id).update(name = machine_type_name)
+
+        return Response({"detail": "success"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

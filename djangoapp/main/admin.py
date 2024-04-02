@@ -13,6 +13,7 @@ class LocationAdmin(admin.ModelAdmin):
     search_fields = ['name']
     list_display = (
         'name',
+        'production_area',
         'pk',
                     )
 admin.site.register(Location, LocationAdmin)
@@ -29,6 +30,7 @@ class MachineTypeAdmin(admin.ModelAdmin):
     search_fields = ['machine_name']
     list_display = (
         'name',
+        'production_area',
         'pk',
                     )
 admin.site.register(MachineType, MachineTypeAdmin)
