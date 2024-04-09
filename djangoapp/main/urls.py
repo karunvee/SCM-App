@@ -31,6 +31,7 @@ urlpatterns = [
     path('generate/item/sn/', generate_serial_number , name='generate_serial_number'),
     path('check/item/sn/', check_serial_number_list , name='check_serial_number_list'),
     path('my/request/pickup/', pick_up , name='pick_up'),
+    path('my/request/scrap/<str:request_id>/', scrap , name='scrap'),
 
 
 

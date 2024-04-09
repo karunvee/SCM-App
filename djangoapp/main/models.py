@@ -45,6 +45,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_supervisor = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+    is_center = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
     objects = CustomUserManager()
@@ -141,10 +142,16 @@ class OrderTacking(models.Model):
 
 class Request(models.Model):
     STATUS = (('Requested', 'Requested'), ('Staff', 'Staff'), ('Manager', 'Manager'), ('Preparing', 'Preparing'), ('Success', 'Success'), ('PickUp', 'PickUp'))
+    PURPOSE_TYPE = (('General', 'General'), ('New Project', 'New Project'), ('Exchange', 'Exchange'))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     requester = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='requester')
     staff_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_approved')
     supervisor_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_approved')
+    
+    scrap_status = models.BooleanField(default=True)
+    scrap_list = models.TextField(blank = True, null=True)
+
+    purpose_type = models.TextField(max_length = 255, choices=PURPOSE_TYPE, default=PURPOSE_TYPE[0][0])
     purpose_detail = models.TextField()
     prepare_by = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='prepare_by', blank=True, null=True)
 
@@ -154,6 +161,9 @@ class Request(models.Model):
     complete_date = models.DateTimeField(blank = True)
     pickup_date = models.DateTimeField(blank = True)
     components = models.ManyToManyField(Component, through='RequestComponentRelation')
+
+    requester_name_center = models.CharField(max_length = 150, blank = True, null=True)
+    requester_emp_center = models.CharField(max_length = 8, blank = True, null=True)
 
     def update_status_to_next(self):
         current_status_index = [status[0] for status in self.STATUS].index(self.status)
@@ -199,13 +209,16 @@ class HistoryTrading(models.Model):
 
     gr_qty = models.IntegerField(default=0)
     gi_qty = models.IntegerField(default=0)
+    scrap_qty = models.IntegerField(default=0)
     purpose_detail = models.TextField()
+    purpose_type = models.CharField(max_length = 100, blank=True, null=True)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
 
     request_id = models.CharField(max_length = 200, blank=True)
     po_number = models.ForeignKey(PO, on_delete=models.SET_NULL, blank=True, null=True)
 
     serial_numbers = models.TextField(default='')
+    scrap_serial_numbers = models.TextField(default='')
 
     issue_date = models.DateTimeField(auto_now_add=True)
 

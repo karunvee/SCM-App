@@ -62,6 +62,7 @@ def login_user(request):
                             email = ad_email,
                             department = ad_department,
 
+                            is_center = False,
                             is_staff = False,
                             is_user = True,
                             is_superuser = False

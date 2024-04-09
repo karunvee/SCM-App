@@ -85,7 +85,9 @@ class RequestSerializer(serializers.ModelSerializer):
     # components = ComponentWithoutSerialsSerializer(many=True, read_only=True)
     class Meta(object):
         model = Request
-        fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'prepare_by','status', 'rejected', 'purpose_detail',
+        fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'prepare_by','status', 
+                  'rejected', 'purpose_detail', 'purpose_type', 'scrap_status', 'scrap_list',
+                  'requester_name_center', 'requester_emp_center',
                   'issue_date', 'complete_date']
 
 class SerialNumberOnlySnSerializer(serializers.ModelSerializer):

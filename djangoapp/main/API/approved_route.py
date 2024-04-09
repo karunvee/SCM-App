@@ -16,7 +16,7 @@ from ..models import *
 from ..serializers import *
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
+@api_view(['GET', 'PUT', 'POST', 'DELETE'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def get_approved_route(request):
@@ -40,17 +40,39 @@ def get_approved_route(request):
                 return Response({"detail": "success"}, status=status.HTTP_200_OK)
             
             return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == 'POST':
+            area_name = request.data.get('area_name')
+            description = request.data.get('description')
+            detail = request.data.get('detail')
+            staff_id = request.data.get('staff_id')
+            manager_id = request.data.get('manager_id')
+            print(area_name, description, detail)
+            prdArea = ProductionArea.objects.create(
+                prod_area_name = area_name,
+                description = description,
+                detail = detail
+            )
+            print(prdArea)
+            ApprovedRoute.objects.create(
+                production_area = prdArea,
+                staff_route = Member.objects.get(pk = staff_id),
+                supervisor_route = Member.objects.get(pk = manager_id)
+            )
+            return Response({"detail": "success"}, status=status.HTTP_200_OK)
 
         elif request.method == 'DELETE':
             query_serializer = ApprovedRouteIdQuerySerializer(data = request.query_params)
             if query_serializer.is_valid():
                 route_id = query_serializer.validated_data.get('route_id')
-                ApprovedRoute.objects.filter(pk = route_id).delete()
-
+                ap = ApprovedRoute.objects.get(pk = route_id)
+                ProductionArea.objects.filter(pk = ap.production_area.pk).delete()
+                ap.delete()
                 return Response({"detail": "success"}, status=status.HTTP_200_OK)
             
             return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
         
+        return Response({"detail": "Data format or Method are invalid"}, status=status.HTTP_400_BAD_REQUEST)     
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -223,7 +245,6 @@ def pick_up(request):
         request_obj = get_object_or_404(Request, id = request_id)
         
         history_items = []
-        print('hit')
         component_relate = RequestComponentRelation.objects.filter(request = request_obj)
         for cr in component_relate:
             serial_numbers_obj = SerialNumber.objects.filter(request__id = request_obj.id, component = cr.component)
@@ -232,17 +253,27 @@ def pick_up(request):
                 serial_numbers.append(sn.serial_number)
             # serializers_serial_numbers = SerialNumberOnlySnSerializer(instance=serial_numbers_obj, many=True)
 
+            if(request_obj.requester_name_center):
+                request_name = request_obj.requester_name_center + f" ({request_obj.requester.username})"
+            else:
+                request_name = request_obj.requester.username
+
+            scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
+            
             history_items.append(HistoryTrading(
-                    requester = request_obj.requester.username,
+                    requester = request_name,
                     staff_approved = request_obj.staff_approved.username,
                     supervisor_approved = request_obj.supervisor_approved.username,
                     trader = emp_name,
                     gr_qty = 0,
                     gi_qty = (-cr.qty),
+                    scrap_qty = scrap_qty,
+                    purpose_type = request_obj.purpose_type,
                     purpose_detail=request_obj.purpose_detail,
                     component=cr.component,
                     request_id = request_obj.id,
-                    serial_numbers = serial_numbers
+                    serial_numbers = serial_numbers,
+                    scrap_serial_numbers = request_obj.scrap_list
                 )) 
             
             Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
@@ -254,6 +285,23 @@ def pick_up(request):
         
         HistoryTrading.objects.bulk_create(history_items)
 
+        return Response({"detail": "success"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(str(e))
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PUT'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def scrap(request, request_id):
+    try:
+        scrap_list = request.data.get('scrap_list')
+        print("request_id", request_id)
+        print("scrap_list", scrap_list)
+        request_obj = get_object_or_404(Request, id = request_id)
+        request_obj.scrap_list = scrap_list
+        request_obj.scrap_status = True
+        request_obj.save()
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
         print(str(e))

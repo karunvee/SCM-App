@@ -54,6 +54,7 @@ def set_account_role(request):
             Member.objects.filter(emp_id = index.get('emp_id')).update(
                 is_staff = index.get('is_staff'),
                 is_supervisor = index.get('is_supervisor'),
+                is_center = index.get('is_center'),
                 production_area = pdAreaObj
                 )
 

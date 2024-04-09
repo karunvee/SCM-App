@@ -36,7 +36,10 @@ def checkout_cart(request):
     try:
         item_list = request.data.get('item_list')
         requester_emp_id = request.data.get('requester_emp_id')
+        requester_name_center = request.data.get('requester_name_center')
+        requester_emp_center = request.data.get('requester_emp_center')
         purpose_detail = request.data.get('purpose_detail')
+        purpose_type = request.data.get('purpose_type')
         print(item_list, requester_emp_id, purpose_detail)
 
         rqt = get_object_or_404(Member, emp_id = requester_emp_id)
@@ -48,7 +51,18 @@ def checkout_cart(request):
             sup = staff
 
         now = datetime.now(pytz.timezone('Asia/Bangkok'))
-        requestReceipt = Request.objects.create(requester = rqt, staff_approved = staff, supervisor_approved = sup, purpose_detail = purpose_detail, complete_date = now, pickup_date = now)
+        requestReceipt = Request.objects.create(
+            requester = rqt, 
+            staff_approved = staff, 
+            supervisor_approved = sup, 
+            purpose_detail = purpose_detail, 
+            complete_date = now, 
+            pickup_date = now, 
+            requester_name_center = requester_name_center, 
+            requester_emp_center = requester_emp_center, 
+            purpose_type = purpose_type,
+            scrap_status = (purpose_type != 'Exchange')
+        )
         for item in item_list:
             print(item)
             component = get_object_or_404(Component, pk = item['component_id'])
