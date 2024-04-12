@@ -258,8 +258,14 @@ def pick_up(request):
             else:
                 request_name = request_obj.requester.username
 
-            scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
-            
+
+            if(request_obj.scrap_list):
+                scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
+                scrap_serial_numbers = request_obj.scrap_list
+            else:
+                scrap_qty = 0
+                scrap_serial_numbers = ''
+
             history_items.append(HistoryTrading(
                     requester = request_name,
                     staff_approved = request_obj.staff_approved.username,
@@ -273,7 +279,7 @@ def pick_up(request):
                     component=cr.component,
                     request_id = request_obj.id,
                     serial_numbers = serial_numbers,
-                    scrap_serial_numbers = request_obj.scrap_list
+                    scrap_serial_numbers = scrap_serial_numbers
                 )) 
             
             Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
