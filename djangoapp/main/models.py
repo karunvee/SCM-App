@@ -208,6 +208,7 @@ class HistoryTrading(models.Model):
     supervisor_approved = models.CharField(max_length = 100, blank=True, null=True)
     trader = models.CharField(max_length = 100)
 
+    left_qty = models.IntegerField(default=0)
     gr_qty = models.IntegerField(default=0)
     gi_qty = models.IntegerField(default=0)
     scrap_qty = models.IntegerField(default=0)

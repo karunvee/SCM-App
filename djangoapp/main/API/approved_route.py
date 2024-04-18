@@ -270,6 +270,7 @@ def pick_up(request):
                     staff_approved = request_obj.staff_approved.username,
                     supervisor_approved = request_obj.supervisor_approved.username,
                     trader = emp_name,
+                    left_qty = (cr.component.quantity - cr.qty),
                     gr_qty = 0,
                     gi_qty = (-cr.qty),
                     scrap_qty = scrap_qty,

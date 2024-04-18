@@ -253,6 +253,7 @@ def add_item(request):
                     staff_approved = "",
                     supervisor_approved = "",
                     trader = trader.name,
+                    left_qty = len(serial_numbers),
                     gr_qty = len(serial_numbers),
                     gi_qty = 0,
                     purpose_detail="Add",
