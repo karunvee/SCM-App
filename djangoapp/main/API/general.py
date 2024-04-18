@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from django.core.paginator import Paginator
 
 from ..models import *
 from ..serializers import *
@@ -53,15 +54,19 @@ def check_po(request):
 @permission_classes([IsAuthenticated])
 def get_grgi(request):
     try:
-        query_serializer = ProdAreaNameQuerySerializer(data = request.query_params)
+        query_serializer = ProdAreaNamePaginatorQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
             production_area_name = query_serializer.validated_data.get('production_area_name')
+            page_number = query_serializer.validated_data.get('page_number')
+            qty_per_page = query_serializer.validated_data.get('qty_per_page')
             
-            pdAreaObj = HistoryTrading.objects.filter(component__production_area__prod_area_name = production_area_name)
-            print(production_area_name)
-            print(pdAreaObj)
-            serializer = HistoryTradingSerializer(instance=pdAreaObj, many=True)
-            return Response({"detail": "success", "data" : serializer.data}, status=status.HTTP_200_OK)
+            pdAreaObj = HistoryTrading.objects.filter(component__production_area__prod_area_name = production_area_name).order_by('-issue_date')
+            total_rows = pdAreaObj.count()
+            paginator = Paginator(pdAreaObj, qty_per_page) 
+            page_obj = paginator.get_page(page_number + 1)
+            serializer = HistoryTradingSerializer(instance=page_obj, many=True)
+            
+            return Response({"detail": "success", "data" : serializer.data, "total_rows":  total_rows}, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:

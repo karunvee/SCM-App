@@ -157,6 +157,7 @@ class Request(models.Model):
 
     status =  models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])
     rejected = models.BooleanField(default= False)
+    # self_pick = models.BooleanField(default= False)
     issue_date = models.DateTimeField(auto_now_add=True)
     complete_date = models.DateTimeField(blank = True)
     pickup_date = models.DateTimeField(blank = True)

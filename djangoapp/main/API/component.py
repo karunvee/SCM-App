@@ -113,6 +113,7 @@ def add_component(request):
         consumable = request.data.get('consumable')
         unique_id = request.data.get('unique_id')
         price = request.data.get('price')
+        supplier = request.data.get('supplier')
 
         machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'))
         component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
@@ -129,10 +130,11 @@ def add_component(request):
             image=image,
             name=name,
             model=model,
-            consumable=consumable,
+            consumable = consumable.lower() == 'true',
             description=description,
-            unique_id=unique_id,
+            unique_id=unique_id.upper(),
             price=price,
+            supplier=supplier,
             machine_type=machine_type,
             component_type=component_type,
             department=department,
@@ -168,6 +170,7 @@ def update_component(request, pk):
         consumable = request.data.get('consumable')
         unique_id = request.data.get('unique_id')
         price = request.data.get('price')
+        supplier = request.data.get('supplier')
 
         machine_type, ct_created = MachineType.objects.get_or_create(name=request.data.get('machine_type'), defaults={})
         component_type, ct_created = ComponentType.objects.get_or_create(name=request.data.get('component_type'), defaults={})
@@ -185,10 +188,11 @@ def update_component(request, pk):
         # Update other fields
         component_obj.name = name
         component_obj.model = model
-        component_obj.consumable = bool(consumable)
+        component_obj.consumable = consumable.lower() == 'true'
         component_obj.description = description
-        component_obj.unique_id = unique_id
+        component_obj.unique_id = unique_id.upper()
         component_obj.price = price
+        supplier=supplier,
         component_obj.machine_type = machine_type
         component_obj.component_type = component_type
         component_obj.department = department
@@ -202,7 +206,6 @@ def update_component(request, pk):
 
         return Response({"detail": "%s was update." % name}, status=status.HTTP_200_OK)
     else:
-        print(str(e))
         return Response({"detail": "This data doesn't contain in the database"}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -301,10 +304,13 @@ def generate_unique_id(component_id, i, snExist):
     characters = '0123456789abcdefghijklmnopqrstuvwxyz'
 
     # Get the maximum possible ID based on the number of characters available
-    max_id = len(characters) ** 5
+    max_length = 7
+    max_id = len(characters) ** max_length
 
     if last_id >= max_id:
-        raise ValueError("Maximum number of IDs reached")
+        last_id = 0
+        # raise ValueError("Maximum number of IDs reached")
+    
 
     # Increment the last ID
     next_id = last_id + 1
@@ -316,7 +322,7 @@ def generate_unique_id(component_id, i, snExist):
         id_string = characters[remainder] + id_string
 
     # Pad the ID with zeros if necessary
-    id_string = id_string.zfill(5)
+    id_string = id_string.zfill(max_length)
 
     # Combine the component prefix with the generated ID
     return f"{id_string}".upper()
@@ -340,7 +346,7 @@ def generate_serial_number(request):
 
             sn_list = []
             for i in range(int(quantity)):
-                txt = f"{member.production_area.detail}{component.unique_id}-0-{generate_unique_id(component_id, i, snExist)}"  
+                txt = f"{member.production_area.detail}{component.unique_id}-{generate_unique_id(component_id, i, snExist)}"  
                 print(txt)
                 sn_list.append(txt)
 

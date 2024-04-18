@@ -97,6 +97,7 @@ def my_request(request):
                         'component_machine_type' : reqRelIndex.component.machine_type.name,
                         'component_component_type' : reqRelIndex.component.component_type.name,
                         'component_image' : reqRelIndex.component.image_url,
+                        'component_consumable' : reqRelIndex.component.consumable,
                         'qty' : reqRelIndex.qty,
                         'serial_numbers': []
                     })

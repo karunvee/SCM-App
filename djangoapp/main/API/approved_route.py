@@ -147,7 +147,6 @@ def approved_order(request):
                     return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
                 
             elif method == 'success':
-                
                 SerialNumber.objects.filter(serial_number__in = serial_numbers).update(request = request_obj.get())
                 request_obj.update(complete_date = now)
                 if not request_obj.get().update_status_to_next():
@@ -290,7 +289,8 @@ def pick_up(request):
             return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
         
         HistoryTrading.objects.bulk_create(history_items)
-
+        request_obj.delete()
+        
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
         print(str(e))
