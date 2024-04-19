@@ -136,14 +136,22 @@ admin.site.register(ApprovedRoute, ApprovedRouteAdmin)
 class HistoryTradingAdmin(admin.ModelAdmin):
     search_fields = ['requester', 'component__name', 'component__model', 'request_id']
     list_display = (
-        'requester',
+        'issue_date',
         'request_id',
         'gr_qty', 'gi_qty', 'scrap_qty',
         'pk',
         'component',
         'serial_numbers',
-        'issue_date'
+        'requester'
                     )
+    fieldsets = (
+        (None, {'fields': ('requester', 'issue_date')}),
+        ('approved', {'fields': ( 'staff_approved', 'supervisor_approved', 'trader')}),
+        ('quantity', {'fields': ( 'left_qty', 'gr_qty', 'gi_qty', 'scrap_qty')}),
+        ('information', {'fields': ( 'purpose_detail', 'purpose_type', 'component', 'request_id', 'po_number')}),
+        ('items', {'fields': ( 'serial_numbers', 'scrap_serial_numbers')})
+    )
+    
     list_filter = ['component__component_type', 'component__department']
 admin.site.register(HistoryTrading, HistoryTradingAdmin)
 

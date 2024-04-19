@@ -3,6 +3,7 @@ import ast
 from datetime import datetime
 import pytz
 from django.shortcuts import render, redirect, get_object_or_404
+from datetime import datetime, timedelta
 
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -205,7 +206,7 @@ def check_in(request):
 
     if query_serializer.is_valid():
         request_id = query_serializer.validated_data.get('request_id')
-        requests = Request.objects.filter(id = request_id, status='Success')
+        requests = Request.objects.filter(id = request_id, status__in = ['Success', 'Manager', 'Preparing'])
         if not requests.exists():
             return Response({"detail": "This Request not found"}, status=status.HTTP_404_NOT_FOUND)
         
@@ -238,6 +239,9 @@ def check_in(request):
 @permission_classes([IsAuthenticated])
 def pick_up(request):
     try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+        year_expired_date = now - timedelta(days = 400)
+
         request_id = request.data.get('request_id')
         emp_name = request.data.get('emp_name')
 
@@ -258,7 +262,7 @@ def pick_up(request):
                 request_name = request_obj.requester.username
 
 
-            if(request_obj.scrap_list):
+            if(request_obj.scrap_list and not cr.component.consumable):
                 scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
                 scrap_serial_numbers = request_obj.scrap_list
             else:
@@ -291,7 +295,8 @@ def pick_up(request):
         
         HistoryTrading.objects.bulk_create(history_items)
         request_obj.delete()
-        
+        HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
+
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
         print(str(e))

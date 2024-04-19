@@ -245,6 +245,8 @@ def add_item(request):
         SerialNumber.objects.bulk_create(serial_container)
 
         component_obj.quantity = SerialNumber.objects.filter(component = component_obj).count()
+        # print('last_sn' , serial_numbers[len(serial_numbers) - 1])
+        component_obj.last_sn = serial_numbers[len(serial_numbers) - 1]
         # print(component_obj.quantity)
         component_obj.save()
 
@@ -287,7 +289,7 @@ def get_item(request):
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def generate_unique_id(component_id, i, snExist):
+def generate_unique_id(component_id, i, last_sn):
     
     # if not snExist:
     #     last_id = i
@@ -299,7 +301,11 @@ def generate_unique_id(component_id, i, snExist):
         print(last_serial_number.serial_number[9:])
         last_id = int(last_serial_number.serial_number[9:], 36) + i # Extract numeric part of the ID
     else:
-        last_id = i  # If no serial number exists yet
+        # If no serial number exists yet
+        if last_sn:
+            last_id = int(last_sn[9:], 36) + i
+        else:
+            last_id = i
 
     # Define the characters to be used in the ID
     characters = '0123456789abcdefghijklmnopqrstuvwxyz'
@@ -343,11 +349,11 @@ def generate_serial_number(request):
             member = get_object_or_404(Member, emp_id = emp_id)
             component =  get_object_or_404(Component, pk = component_id)
 
-            snExist = SerialNumber.objects.filter(component__pk=component_id).exists()
-
+            last_sn = component.last_sn
+    
             sn_list = []
             for i in range(int(quantity)):
-                txt = f"{member.production_area.detail}{component.unique_id}-{generate_unique_id(component_id, i, snExist)}"  
+                txt = f"{member.production_area.detail}{component.unique_id}-{generate_unique_id(component_id, i, last_sn)}"  
                 print(txt)
                 sn_list.append(txt)
 

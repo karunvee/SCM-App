@@ -107,6 +107,7 @@ class Component(models.Model):
     issue_date = models.DateTimeField(auto_now_add=True)
     consumable = models.BooleanField(default= True)
 
+    last_sn = models.CharField(max_length = 100, blank = True)
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE)
     @property
     def image_url(self):
