@@ -225,6 +225,7 @@ def check_in(request):
                     'component_machine_type' : reqRelIndex.component.machine_type.name,
                     'component_component_type' : reqRelIndex.component.component_type.name,
                     'component_image' : reqRelIndex.component.image_url,
+                    'location' : reqRelIndex.component.location.name,
                     'qty' : reqRelIndex.qty,
                     'serial_numbers': serializers_serial_numbers.data,
                 })
@@ -257,9 +258,9 @@ def pick_up(request):
             # serializers_serial_numbers = SerialNumberOnlySnSerializer(instance=serial_numbers_obj, many=True)
 
             if(request_obj.requester_name_center):
-                request_name = request_obj.requester_name_center + f" ({request_obj.requester.username})"
+                request_name = f"{request_obj.requester_emp_center}, {request_obj.requester_name_center} ({request_obj.requester.username})"
             else:
-                request_name = request_obj.requester.username
+                request_name = f"{request_obj.requester.emp_id}, {request_obj.requester.username}"
 
 
             if(request_obj.scrap_list and not cr.component.consumable):

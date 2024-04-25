@@ -192,7 +192,7 @@ def update_component(request, pk):
         component_obj.description = description
         component_obj.unique_id = unique_id.upper()
         component_obj.price = price
-        supplier=supplier,
+        component_obj.supplier = supplier
         component_obj.machine_type = machine_type
         component_obj.component_type = component_type
         component_obj.department = department
