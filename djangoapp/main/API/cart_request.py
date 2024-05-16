@@ -65,7 +65,7 @@ def checkout_cart(request):
             purpose_type = purpose_type,
             scrap_status = (purpose_type != 'Exchange')
         )
-        send_mail(prodArea.staff_route.email, requestReceipt.id, prodArea.staff_route.emp_id)
+        send_mail(prodArea.staff_route.email, requestReceipt.id, prodArea.staff_route.emp_id, rqt.emp_id, rqt.username)
 
         for item in item_list:
             print(item)

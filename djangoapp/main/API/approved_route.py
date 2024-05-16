@@ -149,7 +149,7 @@ def approved_order(request):
                 if not requestData.update_status_to_next():
                     return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
                 if requestData.get_status_index() == 1:
-                    send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id)
+                    send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
 
             elif method == 'success':
                 SerialNumber.objects.filter(serial_number__in = serial_numbers).update(request = requestData)
@@ -203,7 +203,7 @@ def approved_order_byMail(request):
                     if not requestData.update_status_to_next():
                         return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
                     if requestData.get_status_index() == 1:
-                        send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id)
+                        send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
 
                 return redirect(f"https://thwgrwarroom.deltaww.com/scm/approved/success?request_id={request_id}")
                 

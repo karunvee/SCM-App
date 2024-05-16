@@ -2,7 +2,7 @@ import smtplib
 from email.message import EmailMessage
 from ..models import *
 
-def send_mail(receiver_mail, request_id, emp_id):
+def send_mail(receiver_mail, request_id, emp_id, request_emp_id, requester_name):
 
     reqRel = RequestComponentRelation.objects.filter(request__id = request_id)
     content = ''''''
@@ -76,11 +76,11 @@ def send_mail(receiver_mail, request_id, emp_id):
                         <table width="100%">
                             <tr>
                                 <th><h5 style="margin: 0; color: #555555;">Employee ID: </h5></th>
-                                <th><h5 style="margin: 0;">TEST</h5></th>
+                                <th><h5 style="margin: 0;">{request_emp_id}</h5></th>
                             </tr>
                             <tr>
                                 <th><h5 style="margin: 0; color: #555555;">Name: </h5></th>
-                                <th><h5 style="margin: 0;">User.Tester</h5></th>
+                                <th><h5 style="margin: 0;">{requester_name}</h5></th>
                             </tr>
                         </table>
                         <hr>
