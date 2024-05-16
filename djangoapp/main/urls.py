@@ -25,7 +25,10 @@ urlpatterns = [
 
     path('request/approval/list/', approval_list , name='approval_list'),
     path('request/approved/', approved_order , name='approved_order'),
+    path('request/approved/to/', approved_order_byMail , name='approved_order_byMail'),
+
     path('preparing/list/', preparing_list , name='preparing_list'),
+    path('request/list/all/', all_request_list , name='all_request_list'),
     
     path('component/unique/id/', check_unique_id , name='check_unique_id'),
     path('generate/item/sn/', generate_serial_number , name='generate_serial_number'),

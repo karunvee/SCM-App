@@ -191,3 +191,7 @@ class ProdAreaNamePaginatorQuerySerializer(serializers.Serializer):
     production_area_name = serializers.CharField()
     page_number = serializers.IntegerField()
     qty_per_page = serializers.IntegerField()
+
+class ApproveByMailQuerySerializer(serializers.Serializer):
+    request_id = serializers.CharField()
+    emp_id = serializers.CharField()

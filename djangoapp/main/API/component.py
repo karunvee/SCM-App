@@ -20,7 +20,7 @@ def component_list(request):
         query_serializer = ComponentFilterQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
             production_name = query_serializer.validated_data.get('production_name')
-            component_list = Component.objects.filter(production_area__prod_area_name = production_name)
+            component_list = Component.objects.filter(production_area__prod_area_name = production_name).order_by('name')
             serializers = ComponentSerializer(instance=component_list, many=True)
 
             return Response({"detail": "success", "component_list": serializers.data}, status=status.HTTP_200_OK)
@@ -42,11 +42,11 @@ def component_filter(request):
             production_name = query_serializer.validated_data.get('production_name')
             print(production_name)
             print('::', component_type_content, machine_type_content)
-            component_obj = Component.objects.filter(production_area__prod_area_name = production_name)
+            component_obj = Component.objects.filter(production_area__prod_area_name = production_name).order_by('name')
             if component_type_content != 'All':   
-                component_obj = component_obj.filter(component_type__name = component_type_content)
+                component_obj = component_obj.filter(component_type__name = component_type_content).order_by('name')
             if machine_type_content != 'All':
-                component_obj = component_obj.filter( machine_type__name = machine_type_content)
+                component_obj = component_obj.filter( machine_type__name = machine_type_content).order_by('name')
 
             serializers = ComponentWithoutSerialsSerializer(instance=component_obj, many=True)
 
@@ -55,7 +55,6 @@ def component_filter(request):
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -244,7 +243,8 @@ def add_item(request):
             serial_container.append(SerialNumber(serial_number=sn, component=component_obj, po = po))
         SerialNumber.objects.bulk_create(serial_container)
 
-        component_obj.quantity = SerialNumber.objects.filter(component = component_obj).count()
+        balance = SerialNumber.objects.filter(component = component_obj).count()
+        component_obj.quantity = balance
         # print('last_sn' , serial_numbers[len(serial_numbers) - 1])
         component_obj.last_sn = serial_numbers[len(serial_numbers) - 1]
         # print(component_obj.quantity)
@@ -255,7 +255,7 @@ def add_item(request):
                     staff_approved = "",
                     supervisor_approved = "",
                     trader = trader.name,
-                    left_qty = len(serial_numbers),
+                    left_qty = balance,
                     gr_qty = len(serial_numbers),
                     gi_qty = 0,
                     purpose_detail="Add",

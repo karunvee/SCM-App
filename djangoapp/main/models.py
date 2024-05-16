@@ -179,7 +179,14 @@ class Request(models.Model):
             return True
         else:
             return False
-        
+    
+    def get_status_index(self):
+        for index, (status_code, _) in enumerate(self.STATUS):
+            if status_code == self.status:
+                return index
+        # Return -1 if status is not found
+        return -1
+
     def __str__(self):
         return f"{self.id}"
     

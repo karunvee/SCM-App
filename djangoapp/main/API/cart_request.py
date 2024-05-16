@@ -12,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from ..models import *
 from ..serializers import *
-
+from .mail import *
 
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -43,6 +43,8 @@ def checkout_cart(request):
         print(item_list, requester_emp_id, purpose_detail)
 
         rqt = get_object_or_404(Member, emp_id = requester_emp_id)
+        prodArea = get_object_or_404(ApprovedRoute, production_area = rqt.production_area)
+
         if rqt.production_area:
             staff = get_object_or_404(ApprovedRoute, production_area = rqt.production_area).staff_route
             sup = get_object_or_404(ApprovedRoute, production_area = rqt.production_area).supervisor_route
@@ -63,6 +65,8 @@ def checkout_cart(request):
             purpose_type = purpose_type,
             scrap_status = (purpose_type != 'Exchange')
         )
+        send_mail(prodArea.staff_route.email, requestReceipt.id, prodArea.staff_route.emp_id)
+
         for item in item_list:
             print(item)
             component = get_object_or_404(Component, pk = item['component_id'])

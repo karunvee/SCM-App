@@ -15,7 +15,7 @@ from django.db.models import F
 
 from ..models import *
 from ..serializers import *
-
+from .mail import *
 
 @api_view(['GET', 'PUT', 'POST', 'DELETE'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -134,6 +134,7 @@ def approved_order(request):
         serial_numbers = request.data.get('serial_numbers')
        
         member = get_object_or_404(Member, emp_id = emp_id)
+        prodArea = get_object_or_404(ApprovedRoute, production_area = member.production_area)
 
         request_obj = Request.objects.filter(id = request_id)
     
@@ -143,14 +144,17 @@ def approved_order(request):
         models.Q(supervisor_approved=member)
         )
         if member_requests.exists():
+            requestData = request_obj.get()
             if method == 'approve':
-                if not request_obj.get().update_status_to_next():
+                if not requestData.update_status_to_next():
                     return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
-                
+                if requestData.get_status_index() == 1:
+                    send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id)
+
             elif method == 'success':
-                SerialNumber.objects.filter(serial_number__in = serial_numbers).update(request = request_obj.get())
+                SerialNumber.objects.filter(serial_number__in = serial_numbers).update(request = requestData)
                 request_obj.update(complete_date = now)
-                if not request_obj.get().update_status_to_next():
+                if not requestData.update_status_to_next():
                     return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
                 
             elif method == 'reject':
@@ -168,6 +172,47 @@ def approved_order(request):
     except Exception as e:
         print(str(e))
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def approved_order_byMail(request):
+    try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+
+        query_serializer = ApproveByMailQuerySerializer(data = request.query_params)
+
+        if query_serializer.is_valid():
+
+            request_id = query_serializer.validated_data.get('request_id')
+            emp_id = query_serializer.validated_data.get('emp_id')
+
+            member = get_object_or_404(Member, emp_id = emp_id)
+            prodArea = get_object_or_404(ApprovedRoute, production_area = member.production_area)
+
+
+            request_obj = Request.objects.filter(id = request_id)
+        
+            member_requests = request_obj.filter(
+            models.Q(requester=member) |
+            models.Q(staff_approved=member) |
+            models.Q(supervisor_approved=member)
+            )
+            if member_requests.exists():
+                requestData = request_obj.get()
+
+                if requestData.get_status_index() < 2:
+                    if not requestData.update_status_to_next():
+                        return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
+                    if requestData.get_status_index() == 1:
+                        send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id)
+
+                return redirect(f"https://thwgrwarroom.deltaww.com/scm/approved/success?request_id={request_id}")
+                
+            return Response({"detail": "Permission denied"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(str(e))
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -175,6 +220,36 @@ def approved_order(request):
 def preparing_list(request):
     try:
         request_obj = Request.objects.filter(status__in = ['Manager' ,'Preparing'])
+        requests_serializer = RequestSerializer(instance=request_obj, many=True)
+        # Custom Serializer Data
+        for req in requests_serializer.data:
+            reqRel = RequestComponentRelation.objects.filter(request__id = req['id'])
+            req['components'] = []
+            for reqRelIndex in reqRel:
+                req['components'].append({
+                    'id': reqRelIndex.id,
+                    'component_id' : reqRelIndex.component.pk,
+                    'component_name' : reqRelIndex.component.name,
+                    'component_model' : reqRelIndex.component.model,
+                    'component_machine_type' : reqRelIndex.component.machine_type.name,
+                    'component_component_type' : reqRelIndex.component.component_type.name,
+                    'component_image' : reqRelIndex.component.image_url,
+                    'location' : reqRelIndex.component.location.name,
+                    'qty' : reqRelIndex.qty,
+                    'serial_numbers': []
+                })
+
+        return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def all_request_list(request):
+    try:
+        request_obj = Request.objects.all()
         requests_serializer = RequestSerializer(instance=request_obj, many=True)
         # Custom Serializer Data
         for req in requests_serializer.data:
