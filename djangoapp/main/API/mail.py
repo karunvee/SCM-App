@@ -6,27 +6,16 @@ def send_mail(receiver_mail, request_id, emp_id, request_emp_id, requester_name)
 
     reqRel = RequestComponentRelation.objects.filter(request__id = request_id)
     content = ''''''
-    reqArray = {}
+
     for reqRelIndex in reqRel:
-        reqArray = {
-            'id': reqRelIndex.id,
-            'component_id' : reqRelIndex.component.pk,
-            'component_name' : reqRelIndex.component.name,
-            'component_model' : reqRelIndex.component.model,
-            'component_machine_type' : reqRelIndex.component.machine_type.name,
-            'component_component_type' : reqRelIndex.component.component_type.name,
-            'component_image' : reqRelIndex.component.image_url,
-            'location' : reqRelIndex.component.location.name,
-            'qty' : reqRelIndex.qty,
-        }
         content = content + f'''
             <tr>
-                <td >
-                    <h5 style="text-align: center;">{reqArray['component_name']}</h5>
-                </td>
-                <td >
-                    <h5 style="text-align: center;">{reqArray['qty']} unit.</h5>
-                </td>
+                <th> 
+                    <h5 style="text-align: center;">{reqRelIndex.component.name}</h5>
+                </th>
+                <th>
+                    <h5 style="text-align: center;">{reqRelIndex.qty} unit.</h5>
+                </th>
             </tr>
         '''
 
@@ -57,35 +46,49 @@ def send_mail(receiver_mail, request_id, emp_id, request_emp_id, requester_name)
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             {css_styles}
         </head>
-        <body  bgcolor="#F5F8FA" style=" font-family:Lato, sans-serif; font-size:18px;">
-        <div id="email"  style="width: 50%;">
-            <table role="presentation" width="50%">
+        <body style="font-family:Lato, sans-serif; font-size:18px; padding: 40px 15px; background-color: #aadeff; height: fit-content">
+        <table id="email"  style="width: 100%; background-color: #fff;" cellspacing="10">
+            <table role="presentation" style="width: 100%; background-color: #fff;">
                 <tr style="display: flex; align-items: center; justify-content: center; height: 60px;">
-                    <td bgcolor="#0086DB" align="center" style="color: white; ">
+                    <td align="center" style="color: #0086DB; ">
                         <h3 style="text-align: center; margin-top: 20px;">Spare Part Control Management</h3>
                     </td>
                 </tr>
             </table>
-            <table role="presentation" bgcolor="#fff"  border="0" cellpadding="0" cellspacing="10px" width="50%" style="padding: 30px 30px 30px 60px;">
+            <table role="presentation" bgcolor="#fff"  border="0" width="100%" style="PADDING: 30px;">
                 <tr>
                     <td style="
                     display: flex;
                     flex-direction: column;">
-                        <h5 style="margin: 0; color: #555555;">Request ID:</h5>
-                        <h3 style="background-color: #555555; color: #fff; padding: 5px 10px 5px 10px; text-align: center; margin-top: 5px;">33af9980-8dc5-45fb-9196-ff3d167f9c95</h3>
-                        <table width="100%">
+                        <h5 style="margin: 0; color: #555555; text-decoration: underline;">Requester Information</h5>
+                        <table width="100%" style="text-align: center; MARGIN-BOTTOM: 30px;">
                             <tr>
-                                <th><h5 style="margin: 0; color: #555555;">Employee ID: </h5></th>
-                                <th><h5 style="margin: 0;">{request_emp_id}</h5></th>
+                                <th>
+                                    <h5 style="text-align: center;">Request ID: </h5>
+                                </th>
+                                <th>
+                                    <h5 style="text-align: center;">{request_id}</h5>
+                                </th>
                             </tr>
                             <tr>
-                                <th><h5 style="margin: 0; color: #555555;">Name: </h5></th>
-                                <th><h5 style="margin: 0;">{requester_name}</h5></th>
+                                <th>
+                                    <h5 style="text-align: center;">Employee ID: </h5>
+                                </th>
+                                <th>
+                                    <h5 style="text-align: center;">{request_emp_id}</h5>
+                                </th>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <h5 style="text-align: center;">Name </h5>
+                                </th>
+                                <th>
+                                    <h5 style="text-align: center;">{requester_name}</h5>
+                                </th>
                             </tr>
                         </table>
-                        <hr>
-                        <h5 style="margin: 0; color: #555555;">Item List</h5>
-                        <table width="100%">
+                        <h5 style="margin: 0; color: #555555; text-decoration: underline;">Item List</h5>
+                        <table width="100%" style="MARGIN-TOP: 30px">
                             {content}
                         </table>
                         <hr>
@@ -97,8 +100,8 @@ def send_mail(receiver_mail, request_id, emp_id, request_emp_id, requester_name)
                                     </a>
                                 </th>
                                 <th >
-                                    <a align="right" href="{f"https://thwgrwarroom.deltaww.com:8089/api/request/approved/to/?request_id={request_id}&emp_id={emp_id}"}" style="text-decoration: none; color: #0086DB; border: #0086DB solid 1px; padding: 5px 15px; text-align: center;">
-                                        Click to approve
+                                    <a align="right" href="{f"https://thwgrwarroom.deltaww.com:8089/api/request/approved/to/?request_id={request_id}&emp_id={emp_id}"}" style="text-decoration: none; color: #0086DB; padding: 5px 15px; text-align: center;">
+                                         >> Approve here <<
                                     </a>
                                 </th>
                             </tr>
@@ -106,7 +109,7 @@ def send_mail(receiver_mail, request_id, emp_id, request_emp_id, requester_name)
                     </td>
                 </tr>
             </table>
-        </div>
+        </table>
         </body>
         </html>
     ''', subtype='html')
@@ -117,3 +120,4 @@ def send_mail(receiver_mail, request_id, emp_id, request_emp_id, requester_name)
         server.ehlo()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.send_message(msg)
+

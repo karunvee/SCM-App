@@ -42,7 +42,7 @@ def login_user(request):
                     user_account = username
                     base_dn = 'DC=delta,DC=corp'  # Update this to your AD's base DN
                     search_filter = f'(sAMAccountName={user_account})'
-                    attributes = ['sAMAccountName', 'displayName', 'mail', 'department', 'postalCode']
+                    attributes = ['sAMAccountName', 'displayName', 'mail', 'department', 'employeeID']
                     connect.search(search_base=base_dn, search_filter=search_filter, attributes=attributes)
 
                     if connect.entries:
@@ -52,13 +52,13 @@ def login_user(request):
                         ad_displayName = entry.displayName.value
                         ad_email = entry.mail.value
                         ad_department = entry.department.value
-                        ad_employeeId = entry.postalCode.value
+                        ad_employeeId = entry.employeeID.value
                         print('Hit3')
 
                         new_member = Member.objects.create(
                             emp_id = ad_employeeId,
                             username = username,
-                            name = "%s" % (ad_displayName),
+                            name = f"{ad_displayName}",
                             email = ad_email,
                             department = ad_department,
 

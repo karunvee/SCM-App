@@ -36,6 +36,8 @@ urlpatterns = [
     path('my/request/pickup/', pick_up , name='pick_up'),
     path('my/request/scrap/<str:request_id>/', scrap , name='scrap'),
 
+    path('self_pickup/list/<str:emp_id>/', self_pick_up_list , name='self_pick_up_list'),
+    path('self/pickup/', set_self_pick_up , name='set_self_pick_up'),
 
 
     path('component/add/', add_component , name='add_component'),

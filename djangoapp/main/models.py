@@ -106,6 +106,7 @@ class Component(models.Model):
     quantity_alert = models.IntegerField(default=10)
     issue_date = models.DateTimeField(auto_now_add=True)
     consumable = models.BooleanField(default= True)
+    self_pickup = models.BooleanField(default= False)
 
     last_sn = models.CharField(max_length = 100, blank = True)
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE)
@@ -149,7 +150,7 @@ class Request(models.Model):
     staff_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_approved')
     supervisor_approved = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_approved')
     
-    scrap_status = models.BooleanField(default=True)
+    scrap_status = models.BooleanField(default=False)
     scrap_list = models.TextField(blank = True, null=True)
 
     purpose_type = models.TextField(max_length = 255, choices=PURPOSE_TYPE, default=PURPOSE_TYPE[0][0])
@@ -158,7 +159,8 @@ class Request(models.Model):
 
     status =  models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])
     rejected = models.BooleanField(default= False)
-    # self_pick = models.BooleanField(default= False)
+    self_pickup = models.BooleanField(default= False)
+
     issue_date = models.DateTimeField(auto_now_add=True)
     complete_date = models.DateTimeField(blank = True)
     pickup_date = models.DateTimeField(blank = True)

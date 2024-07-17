@@ -40,8 +40,7 @@ def checkout_cart(request):
         requester_emp_center = request.data.get('requester_emp_center')
         purpose_detail = request.data.get('purpose_detail')
         purpose_type = request.data.get('purpose_type')
-        print(item_list, requester_emp_id, purpose_detail)
-
+       
         rqt = get_object_or_404(Member, emp_id = requester_emp_id)
         prodArea = get_object_or_404(ApprovedRoute, production_area = rqt.production_area)
 
@@ -65,12 +64,13 @@ def checkout_cart(request):
             purpose_type = purpose_type,
             scrap_status = (purpose_type != 'Exchange')
         )
-        send_mail(prodArea.staff_route.email, requestReceipt.id, prodArea.staff_route.emp_id, rqt.emp_id, rqt.username)
 
         for item in item_list:
-            print(item)
+           
             component = get_object_or_404(Component, pk = item['component_id'])
             RequestComponentRelation.objects.create(request=requestReceipt, component=component, qty=item['quantity'])
+
+        send_mail(prodArea.staff_route.email, requestReceipt.id, prodArea.staff_route.emp_id, rqt.emp_id, rqt.username)
 
         return Response({"detail": "success", "request_id": requestReceipt.id}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -127,5 +127,4 @@ def delete_my_request(request):
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
 

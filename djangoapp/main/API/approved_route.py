@@ -90,10 +90,12 @@ def approval_list(request):
             approver = get_object_or_404(Member, emp_id = emp_id)
             route = get_object_or_404(ApprovedRoute, production_area = approver.production_area)
             
-            if route.staff_route == approver:
+            if route.staff_route == approver and route.supervisor_route != approver:
                 request_obj = Request.objects.filter(staff_approved = approver, status = 'Requested')
-            elif route.supervisor_route == approver:
+            elif route.staff_route != approver and route.supervisor_route == approver:
                 request_obj = Request.objects.filter(supervisor_approved = approver, status = 'Staff')
+            elif route.staff_route == approver and route.supervisor_route == approver:
+                request_obj = Request.objects.filter(status__in = ['Requested', 'Staff'])
             else:
                 return Response({"detail": "Not found you route"}, status=status.HTTP_404_NOT_FOUND)
             
@@ -148,8 +150,13 @@ def approved_order(request):
             if method == 'approve':
                 if not requestData.update_status_to_next():
                     return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
-                if requestData.get_status_index() == 1:
+                r_status = requestData.get_status_index()
+                if r_status == 1:
                     send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
+                if r_status == 2:
+                    if requestData.self_pickup:
+                        requestData.delete()
+                        print('self pick-up already !!! delete this request')
 
             elif method == 'success':
                 SerialNumber.objects.filter(serial_number__in = serial_numbers).update(request = requestData)
@@ -190,6 +197,7 @@ def approved_order_byMail(request):
 
 
             request_obj = Request.objects.filter(id = request_id)
+
         
             member_requests = request_obj.filter(
             models.Q(requester=member) |
@@ -205,14 +213,14 @@ def approved_order_byMail(request):
                     if requestData.get_status_index() == 1:
                         send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
 
-                return redirect(f"https://thwgrwarroom.deltaww.com/scm/approved/success?request_id={request_id}")
+                return redirect(f"https://thwgrwarroom.deltaww.com/scm/approved/by_mail?request_id={request_id}&result=success")
                 
-            return Response({"detail": "Permission denied"}, status=status.HTTP_400_BAD_REQUEST)
+            return redirect(f"https://thwgrwarroom.deltaww.com/scm/approved/by_mail?request_id={request_id}&result=not_found")
         
-        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+        return redirect(f"https://thwgrwarroom.deltaww.com/scm/approved/by_mail?request_id={request_id}&result=error")
     except Exception as e:
         print(str(e))
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        return redirect(f"https://thwgrwarroom.deltaww.com/scm/approved/by_mail?request_id={request_id}&result=error")
     
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -384,12 +392,120 @@ def pick_up(request):
 def scrap(request, request_id):
     try:
         scrap_list = request.data.get('scrap_list')
-        print("request_id", request_id)
-        print("scrap_list", scrap_list)
+
         request_obj = get_object_or_404(Request, id = request_id)
         request_obj.scrap_list = scrap_list
         request_obj.scrap_status = True
         request_obj.save()
+        return Response({"detail": "success"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(str(e))
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def self_pick_up_list(request, emp_id):
+    try:
+        req = Request.objects.filter(requester__emp_id = emp_id, self_pickup = False)
+        requests_serializer = RequestSerializer(instance=req, many=True)
+        
+        req_list = []
+        # Custom Serializer Data
+        for req in requests_serializer.data:
+            enable_pickup = True
+            reqRel = RequestComponentRelation.objects.filter(request__id = req['id'])
+            req['components'] = []
+            for reqRelIndex in reqRel:
+                req['components'].append({
+                    'id': reqRelIndex.id,
+                    'component_id' : reqRelIndex.component.pk,
+                    'component_name' : reqRelIndex.component.name,
+                    'component_model' : reqRelIndex.component.model,
+                    'component_machine_type' : reqRelIndex.component.machine_type.name,
+                    'component_component_type' : reqRelIndex.component.component_type.name,
+                    'component_image' : reqRelIndex.component.image_url,
+                    'location' : reqRelIndex.component.location.name,
+                    'qty' : reqRelIndex.qty,
+                    'serial_numbers': []
+                })
+                if not reqRelIndex.component.self_pickup: 
+                    enable_pickup = False
+                    break
+
+            if enable_pickup:
+                req_list.append(req)
+
+        return Response({"detail": "success", "data": req_list}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def set_self_pick_up(request):
+    try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+        year_expired_date = now - timedelta(days = 400)
+
+        request_id = request.data.get('request_id')
+        emp_name = request.data.get('emp_name')
+
+        request_obj = get_object_or_404(Request, id = request_id)
+        
+        Request.objects.filter(id = request_id).update(self_pickup = True)
+        history_items = []
+        component_relate = RequestComponentRelation.objects.filter(request = request_obj)
+        for cr in component_relate:
+            serial_numbers_obj = SerialNumber.objects.filter(request__id = request_obj.id, component = cr.component)
+            serial_numbers = []
+            for sn in serial_numbers_obj:
+                serial_numbers.append(sn.serial_number)
+            # serializers_serial_numbers = SerialNumberOnlySnSerializer(instance=serial_numbers_obj, many=True)
+
+            if(request_obj.requester_name_center):
+                request_name = f"{request_obj.requester_emp_center}, {request_obj.requester_name_center} ({request_obj.requester.username})"
+            else:
+                request_name = f"{request_obj.requester.emp_id}, {request_obj.requester.username}"
+
+
+            if(request_obj.scrap_list and not cr.component.consumable):
+                scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
+                scrap_serial_numbers = request_obj.scrap_list
+            else:
+                scrap_qty = 0
+                scrap_serial_numbers = ''
+
+            history_items.append(HistoryTrading(
+                    requester = request_name,
+                    staff_approved = request_obj.staff_approved.username,
+                    supervisor_approved = request_obj.supervisor_approved.username,
+                    trader = emp_name,
+                    left_qty = (cr.component.quantity - cr.qty),
+                    gr_qty = 0,
+                    gi_qty = (-cr.qty),
+                    scrap_qty = scrap_qty,
+                    purpose_type = request_obj.purpose_type,
+                    purpose_detail=request_obj.purpose_detail,
+                    component=cr.component,
+                    request_id = request_obj.id,
+                    serial_numbers = serial_numbers,
+                    scrap_serial_numbers = scrap_serial_numbers
+                )) 
+            
+            Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
+            serial_numbers_obj.delete()
+            cr.delete()
+
+        
+        HistoryTrading.objects.bulk_create(history_items)
+        HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
+
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
         print(str(e))
