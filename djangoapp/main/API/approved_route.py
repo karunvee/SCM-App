@@ -210,8 +210,14 @@ def approved_order_byMail(request):
                 if requestData.get_status_index() < 2:
                     if not requestData.update_status_to_next():
                         return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
-                    if requestData.get_status_index() == 1:
+                    
+                    r_status = requestData.get_status_index()
+                    if r_status == 1:
                         send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
+                    if r_status == 2:
+                        if requestData.self_pickup:
+                            requestData.delete()
+                            print('self pick-up already !!! delete this request')
 
                 return redirect(f"https://thwgrwarroom.deltaww.com/scm/approved/by_mail?request_id={request_id}&result=success")
                 
