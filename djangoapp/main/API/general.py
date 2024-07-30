@@ -9,6 +9,9 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 from rest_framework.permissions import IsAuthenticated
 from django.core.paginator import Paginator
 
+import pytz
+from datetime import datetime, timedelta
+
 from ..models import *
 from ..serializers import *
 
@@ -17,6 +20,11 @@ from ..serializers import *
 @permission_classes([IsAuthenticated])
 def add_po(request):
     try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+        year_expired_date = now - timedelta(days = 400)
+
+        PO.objects.filter(issue_date__lte = year_expired_date).delete() 
+
         po_number = request.data.get('po_number')
         prod_area_name = request.data.get('prod_area_name')
         po_obj = PO.objects.filter(po_number = po_number)

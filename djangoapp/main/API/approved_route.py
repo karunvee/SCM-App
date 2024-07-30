@@ -156,6 +156,7 @@ def approved_order(request):
                 if r_status == 2:
                     if requestData.self_pickup:
                         requestData.delete()
+                        RequestComponentRelation.objects.filter(request = request_obj).delete()
                         print('self pick-up already !!! delete this request')
 
             elif method == 'success':
@@ -461,10 +462,13 @@ def set_self_pick_up(request):
 
         request_id = request.data.get('request_id')
         emp_name = request.data.get('emp_name')
+        serial_numbers_input = request.data.get('serial_numbers')
 
         request_obj = get_object_or_404(Request, id = request_id)
-        
+
         Request.objects.filter(id = request_id).update(self_pickup = True)
+        SerialNumber.objects.filter(serial_number__in = serial_numbers_input).update(request = request_obj)
+        
         history_items = []
         component_relate = RequestComponentRelation.objects.filter(request = request_obj)
         for cr in component_relate:
@@ -472,7 +476,6 @@ def set_self_pick_up(request):
             serial_numbers = []
             for sn in serial_numbers_obj:
                 serial_numbers.append(sn.serial_number)
-            # serializers_serial_numbers = SerialNumberOnlySnSerializer(instance=serial_numbers_obj, many=True)
 
             if(request_obj.requester_name_center):
                 request_name = f"{request_obj.requester_emp_center}, {request_obj.requester_name_center} ({request_obj.requester.username})"
@@ -506,7 +509,7 @@ def set_self_pick_up(request):
             
             Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
             serial_numbers_obj.delete()
-            cr.delete()
+            # cr.delete()
 
         
         HistoryTrading.objects.bulk_create(history_items)
