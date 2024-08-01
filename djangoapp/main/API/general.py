@@ -64,20 +64,46 @@ def get_grgi(request):
     try:
         query_serializer = ProdAreaNamePaginatorQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
+            bangkok_tz = pytz.timezone('Asia/Bangkok')
+
+            date_start_str = query_serializer.validated_data.get('date_start')
+            date_end_str = query_serializer.validated_data.get('date_end')
             production_area_name = query_serializer.validated_data.get('production_area_name')
             page_number = query_serializer.validated_data.get('page_number')
             qty_per_page = query_serializer.validated_data.get('qty_per_page')
+
+            component_name = query_serializer.validated_data.get('component_name')
+
+            date_start = datetime.strptime(date_start_str, "%m/%d/%Y")
+            date_end = datetime.strptime(date_end_str, "%m/%d/%Y")
+            date_start = bangkok_tz.localize(date_start)
+            date_end = bangkok_tz.localize(date_end)
+            print(component_name)
+            if component_name == 'None':
+                pdAreaObj = HistoryTrading.objects.filter(component__production_area__prod_area_name = production_area_name, issue_date__range=(date_start, date_end)).order_by('-issue_date')
+            else:
+                pdAreaObj = HistoryTrading.objects.filter(component__name__exact = component_name, component__production_area__prod_area_name = production_area_name, issue_date__range=(date_start, date_end)).order_by('-issue_date')
             
-            pdAreaObj = HistoryTrading.objects.filter(component__production_area__prod_area_name = production_area_name).order_by('-issue_date')
             total_rows = pdAreaObj.count()
+
+            tt_gr = 0
+            tt_gi = 0
+            tt_scrap = 0
+            for item in pdAreaObj:
+                tt_gr = tt_gr + item.gr_qty
+                tt_gi = tt_gi + (item.gi_qty * -1)
+                tt_scrap = tt_scrap + item.scrap_qty
+            
             paginator = Paginator(pdAreaObj, qty_per_page) 
             page_obj = paginator.get_page(page_number + 1)
+            
             serializer = HistoryTradingSerializer(instance=page_obj, many=True)
             
-            return Response({"detail": "success", "data" : serializer.data, "total_rows":  total_rows}, status=status.HTTP_200_OK)
+            return Response({"detail": "success", "data" : serializer.data, "total_rows":  total_rows, "total_gr": tt_gr, "total_gi": tt_gi, "total_scrap": tt_scrap}, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+        print(e)
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['GET'])
