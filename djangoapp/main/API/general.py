@@ -77,8 +77,8 @@ def get_grgi(request):
             date_start = datetime.strptime(date_start_str, "%m/%d/%Y")
             date_end = datetime.strptime(date_end_str, "%m/%d/%Y")
 
-            if date_start == date_end:
-                date_end = date_end + timedelta(hours=23, minutes=59)
+            # if date_start == date_end:
+            date_end = date_end + timedelta(hours=23, minutes=59)
                 
             print(component_name)
             if component_name == 'None':
