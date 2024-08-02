@@ -76,8 +76,10 @@ def get_grgi(request):
 
             date_start = datetime.strptime(date_start_str, "%m/%d/%Y")
             date_end = datetime.strptime(date_end_str, "%m/%d/%Y")
-            date_start = bangkok_tz.localize(date_start)
-            date_end = bangkok_tz.localize(date_end)
+
+            if date_start == date_end:
+                date_end = date_end + timedelta(hours=23, minutes=59)
+                
             print(component_name)
             if component_name == 'None':
                 pdAreaObj = HistoryTrading.objects.filter(component__production_area__prod_area_name = production_area_name, issue_date__range=(date_start, date_end)).order_by('-issue_date')
