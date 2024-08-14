@@ -152,7 +152,10 @@ def approved_order(request):
                     return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
                 r_status = requestData.get_status_index()
                 if r_status == 1:
-                    send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
+                    try:
+                        send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
+                    except Exception as e:
+                        return Response({"detail": "success", "mail": f"{str(e)} sending a mail unsuccessfully."}, status=status.HTTP_200_OK)
                 if r_status == 2:
                     if requestData.self_pickup:
                         requestData.delete()
@@ -214,7 +217,10 @@ def approved_order_byMail(request):
                     
                     r_status = requestData.get_status_index()
                     if r_status == 1:
-                        send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
+                        try:
+                            send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
+                        except Exception as e:
+                            return Response({"detail": "success", "mail": f"{str(e)} sending a mail unsuccessfully."}, status=status.HTTP_200_OK)
                     if r_status == 2:
                         if requestData.self_pickup:
                             requestData.delete()
