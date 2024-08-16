@@ -49,7 +49,7 @@ def set_account_role(request):
         for index in update_members:
             
             production_area = index.get('production_area')
-            if index.get('production_area'):
+            if index.get('production_area') is not None:
                 pdAreaObj = get_object_or_404(ProductionArea, pk = production_area.get('id'))
             else:
                 continue
