@@ -49,7 +49,10 @@ def set_account_role(request):
         for index in update_members:
             
             production_area = index.get('production_area')
-            pdAreaObj = get_object_or_404(ProductionArea, pk = production_area.get('id'))
+            if index.get('production_area'):
+                pdAreaObj = get_object_or_404(ProductionArea, pk = production_area.get('id'))
+            else:
+                continue
 
             Member.objects.filter(emp_id = index.get('emp_id')).update(
                 is_staff = index.get('is_staff'),
@@ -62,6 +65,7 @@ def set_account_role(request):
         members = Member.objects.all().exclude(pk=1)
         member_serializer = MemberSerializer(instance=members, many=True)
         return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
+
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 

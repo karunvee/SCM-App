@@ -139,6 +139,9 @@ def approved_order(request):
         prodArea = get_object_or_404(ApprovedRoute, production_area = member.production_area)
 
         request_obj = Request.objects.filter(id = request_id)
+
+        if not request_obj.exists():
+            return Response({"detail": f"Request ID [{request_id}] not found."}, status=status.HTTP_404_NOT_FOUND)
     
         member_requests = request_obj.filter(
         models.Q(requester=member) |
