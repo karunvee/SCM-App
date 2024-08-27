@@ -162,8 +162,6 @@ def approved_order(request):
                 if r_status == 2:
                     if requestData.self_pickup:
                         requestData.delete()
-                        RequestComponentRelation.objects.filter(request = request_obj).delete()
-                        print('self pick-up already !!! delete this request')
 
             elif method == 'success':
                 SerialNumber.objects.filter(serial_number__in = serial_numbers).update(request = requestData)
