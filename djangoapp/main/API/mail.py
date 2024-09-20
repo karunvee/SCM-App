@@ -20,7 +20,7 @@ def send_mail(receiver_mail, request_id, emp_id, request_emp_id, requester_name)
         '''
 
     EMAIL_ADDRESS = 'warroom_service@deltaww.com'
-    EMAIL_PASSWORD = 'W@rServ1ce'
+    EMAIL_PASSWORD = 'W@rRoomServ1ce'
 
     msg = EmailMessage()
     msg['Subject'] = f'[ SCM Notify ] Request ID : {request_id}'
