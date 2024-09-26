@@ -154,6 +154,9 @@ class ApprovedRouteSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 # Params
+class ComponentProdNameQuerySerializer(serializers.Serializer):
+    production_name = serializers.CharField()
+
 class ComponentFilterQuerySerializer(serializers.Serializer):
     component_type_content = serializers.CharField()
     machine_type_content = serializers.CharField()

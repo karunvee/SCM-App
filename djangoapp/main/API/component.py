@@ -17,13 +17,13 @@ from ..serializers import *
 @api_view(['GET'])
 def component_list(request):
     try:
-        query_serializer = ComponentFilterQuerySerializer(data = request.query_params)
+        query_serializer = ComponentProdNameQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
             production_name = query_serializer.validated_data.get('production_name')
             component_list = Component.objects.filter(production_area__prod_area_name = production_name).order_by('name')
             serializers = ComponentSerializer(instance=component_list, many=True)
 
-            return Response({"detail": "success", "component_list": serializers.data}, status=status.HTTP_200_OK)
+            return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
@@ -48,7 +48,7 @@ def component_filter(request):
             if machine_type_content != 'All':
                 component_obj = component_obj.filter( machine_type__name = machine_type_content).order_by('name')
 
-            serializers = ComponentWithoutSerialsSerializer(instance=component_obj, many=True)
+            serializers = ComponentSerializer(instance=component_obj, many=True)
 
             return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
         
