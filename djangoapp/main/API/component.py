@@ -109,7 +109,8 @@ def add_component(request):
         # po_number = request.data['po_number']
         # serial_numbers = request.data.get('serial_numbers').split(',')
         description = request.data.get('description')
-        consumable = request.data.get('consumable')
+        self_pickup = request.data.get('self_pickup')
+        unique_component = request.data.get('unique_component')
         unique_id = request.data.get('unique_id')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
@@ -129,7 +130,8 @@ def add_component(request):
             image=image,
             name=name,
             model=model,
-            consumable = consumable.lower() == 'true',
+            self_pickup = self_pickup.lower() == 'true',
+            unique_component = unique_component.lower() == 'true',
             description=description,
             unique_id=unique_id.upper(),
             price=price,
@@ -166,7 +168,8 @@ def update_component(request, pk):
         # po_number = request.data['po_number']
         # serial_numbers = request.data['serial_numbers'].split(',')
         description = request.data.get('description')
-        consumable = request.data.get('consumable')
+        self_pickup = request.data.get('self_pickup')
+        unique_component = request.data.get('unique_component')
         unique_id = request.data.get('unique_id')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
@@ -187,7 +190,8 @@ def update_component(request, pk):
         # Update other fields
         component_obj.name = name
         component_obj.model = model
-        component_obj.consumable = consumable.lower() == 'true'
+        component_obj.self_pickup = self_pickup.lower() == 'true'
+        component_obj.unique_component = unique_component.lower() == 'true'
         component_obj.description = description
         component_obj.unique_id = unique_id.upper()
         component_obj.price = price
@@ -263,6 +267,49 @@ def add_item(request):
                     request_id = "",
                     po_number = po,
                     serial_numbers = serial_numbers
+            )
+
+        return Response({"detail": f"Added items to PO: {request.data.get('po_number')}"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def add_item_unique(request):
+    try:
+        component_id = request.data.get('component_id')
+        quantity = request.data.get('quantity')
+        po = PO.objects.get(po_number = request.data.get('po_number'))
+
+        emp_id = request.data.get('emp_id')
+        trader = get_object_or_404(Member, emp_id = emp_id)
+        component_obj = get_object_or_404(Component, pk = component_id)
+    
+        balance = component_obj.quantity + quantity
+        component_obj.quantity = balance
+
+        sn = f"{trader.production_area.detail}{component_obj.unique_id}-0UNIQUE"  
+        component_obj.last_sn = sn
+
+        component_obj.save()
+
+        if not SerialNumber.objects.filter(serial_number = sn).exists():
+            SerialNumber.objects.create(serial_number=sn, component=component_obj, po = po)
+
+        HistoryTrading.objects.create(
+                    requester = "",
+                    staff_approved = "",
+                    supervisor_approved = "",
+                    trader = trader.name,
+                    left_qty = balance,
+                    gr_qty = quantity,
+                    gi_qty = 0,
+                    purpose_detail="Add",
+                    component=component_obj,
+                    request_id = "",
+                    po_number = po,
+                    serial_numbers = ''
             )
 
         return Response({"detail": f"Added items to PO: {request.data.get('po_number')}"}, status=status.HTTP_200_OK)
@@ -373,12 +420,17 @@ def check_unique_id(request):
     try:
         component_id = request.data.get('component_id')
         unique_id = request.data.get('unique_id')
+        prod_name = request.data.get('prod_name')
+
+        print(component_id, unique_id, prod_name)
+        comp = Component.objects.filter(production_area__prod_area_name = prod_name)
+
         if component_id == 0:
-            if Component.objects.filter(unique_id = unique_id).exists():
+            if comp.filter(unique_id = unique_id).exists():
                 return Response({"detail": "This Unique ID have been used"}, status=status.HTTP_409_CONFLICT)
             return Response({"detail": "This Unique ID is OK."}, status=status.HTTP_200_OK)
         else:
-            if Component.objects.exclude(id = component_id).filter(unique_id = unique_id).exists():
+            if comp.exclude(id = component_id).filter(unique_id = unique_id).exists():
                 return Response({"detail": "This Unique ID have been used"}, status=status.HTTP_409_CONFLICT)
             return Response({"detail": "This Unique ID is OK."}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -392,7 +444,7 @@ def check_serial_number_list(request):
     try:
         item_list = request.data.get('item_list')
         component_list = request.data.get('component_list')
-    
+        print(item_list, component_list)
         item_used = []
         lists = []
         component_counts = {}
@@ -400,9 +452,10 @@ def check_serial_number_list(request):
         for component in component_list:    
             for serial_number in item_list:
                 try:
-                    sn = SerialNumber.objects.filter(serial_number=serial_number, component = Component.objects.get(pk = component))
+                    compObj = Component.objects.get(pk = component)
+                    sn = SerialNumber.objects.filter(serial_number=serial_number["sn"], component = compObj)
                     if sn.exists():
-                        item_used.append(serial_number)
+                        item_used.append(serial_number["sn"])
                         component_counts[component] = component_counts.get(component, 0) + 1
                         
                     else:
@@ -413,12 +466,11 @@ def check_serial_number_list(request):
 
             lists.append({
                 "id": component,
-                "qty": component_counts[component]
+                "qty": component_counts[component],
+                "unique_component": compObj.unique_component
             })
         s = set(item_used)
-        diff = [x for x in item_list if x not in s]
-        # print(diff)
-        # print(lists)
+        diff = [x["sn"] for x in item_list if x["sn"] not in s]
 
         return Response({"detail": "success", "data": lists, "diff": diff}, status=status.HTTP_200_OK)
     except Exception as e:

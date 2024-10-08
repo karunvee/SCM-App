@@ -42,7 +42,7 @@ class ComponentSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Component
         fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier',
-                  'component_type', 'department', 'location', 'issue_date', 'self_pickup',
+                  'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
                   'quantity', 'quantity_warning', 'quantity_alert', 
                   'consumable', 'image', 'serial_numbers']
 
@@ -54,7 +54,7 @@ class ComponentWithoutSerialsSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Component
         fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier',
-                  'component_type', 'department', 'location', 'issue_date', 'self_pickup',
+                  'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
                   'quantity', 'quantity_warning', 'quantity_alert', 
                   'consumable', 'image']
 

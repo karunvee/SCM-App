@@ -77,10 +77,9 @@ class ComponentAdmin(admin.ModelAdmin):
         'pk',
         'quantity',
         'model',
-        'get_serial_numbers',
-        'component_type',
+        'self_pickup',
+        'unique_component',
         'location',
-        'department',
                     )
     list_filter = ['component_type', 'department', 'location']
 

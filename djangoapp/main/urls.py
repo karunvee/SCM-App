@@ -45,6 +45,7 @@ urlpatterns = [
     path('component/delete/<int:pk>/', delete_component , name='delete_component'),
     path('component/list/information/', info_component_list , name='info_component_list'),
     path('add/item/serial_number/', add_item , name='add_item'),
+    path('add/item/unique/', add_item_unique , name='add_item_unique'),
     path('serial_number/list/', get_item , name='get_item'),
     
     path('account/list/', get_account , name='get_account'),

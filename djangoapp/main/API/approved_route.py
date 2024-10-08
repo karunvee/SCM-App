@@ -88,6 +88,7 @@ def approval_list(request):
             emp_id = query_serializer.validated_data.get('emp_id')
 
             approver = get_object_or_404(Member, emp_id = emp_id)
+            print(approver.production_area)
             route = get_object_or_404(ApprovedRoute, production_area = approver.production_area)
             
             if route.staff_route == approver and route.supervisor_route != approver:
@@ -99,6 +100,8 @@ def approval_list(request):
             else:
                 return Response({"detail": "Not found you route"}, status=status.HTTP_404_NOT_FOUND)
             
+            print(approver.production_area)
+
             requests_serializer = RequestSerializer(instance=request_obj, many=True)
             # Custom Serializer Data
             for req in requests_serializer.data:
