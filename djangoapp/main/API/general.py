@@ -69,8 +69,8 @@ def get_grgi(request):
             date_start_str = query_serializer.validated_data.get('date_start')
             date_end_str = query_serializer.validated_data.get('date_end')
             production_area_name = query_serializer.validated_data.get('production_area_name')
-            page_number = query_serializer.validated_data.get('page_number')
-            qty_per_page = query_serializer.validated_data.get('qty_per_page')
+            # page_number = query_serializer.validated_data.get('page_number')
+            # qty_per_page = query_serializer.validated_data.get('qty_per_page')
 
             component_name = query_serializer.validated_data.get('component_name')
 
@@ -96,10 +96,11 @@ def get_grgi(request):
                 tt_gi = tt_gi + (item.gi_qty * -1)
                 tt_scrap = tt_scrap + item.scrap_qty
             
-            paginator = Paginator(pdAreaObj, qty_per_page) 
-            page_obj = paginator.get_page(page_number + 1)
+            # paginator = Paginator(pdAreaObj, qty_per_page) 
+            # page_obj = paginator.get_page(page_number + 1)
+            # serializer = HistoryTradingSerializer(instance=page_obj, many=True)
             
-            serializer = HistoryTradingSerializer(instance=page_obj, many=True)
+            serializer = HistoryTradingSerializer(instance=pdAreaObj, many=True)
             
             return Response({"detail": "success", "data" : serializer.data, "total_rows":  total_rows, "total_gr": tt_gr, "total_gi": tt_gi, "total_scrap": tt_scrap}, status=status.HTTP_200_OK)
         

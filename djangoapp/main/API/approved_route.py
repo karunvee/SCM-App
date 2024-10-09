@@ -137,7 +137,7 @@ def approved_order(request):
         emp_id = request.data.get('emp_id')
         method = request.data.get('method')
         serial_numbers = request.data.get('serial_numbers')
-       
+        
         member = get_object_or_404(Member, emp_id = emp_id)
         prodArea = get_object_or_404(ApprovedRoute, production_area = member.production_area)
 
@@ -146,12 +146,12 @@ def approved_order(request):
         if not request_obj.exists():
             return Response({"detail": f"Request ID [{request_id}] not found."}, status=status.HTTP_404_NOT_FOUND)
     
-        member_requests = request_obj.filter(
-        models.Q(requester=member) |
-        models.Q(staff_approved=member) |
-        models.Q(supervisor_approved=member)
-        )
-        if member_requests.exists():
+        # member_requests = request_obj.filter(
+        #     models.Q(requester=member) |
+        #     models.Q(staff_approved=member) |
+        #     models.Q(supervisor_approved=member)
+        # )
+        if member.is_staff:
             requestData = request_obj.get()
             if method == 'approve':
                 if not requestData.update_status_to_next():
@@ -167,7 +167,8 @@ def approved_order(request):
                         requestData.delete()
 
             elif method == 'success':
-                SerialNumber.objects.filter(serial_number__in = serial_numbers).update(request = requestData)
+                sn_list = [item['sn'] for item in serial_numbers if not item['unique_component']]
+                SerialNumber.objects.filter(serial_number__in = sn_list).update(request = requestData)
                 request_obj.update(complete_date = now)
                 if not requestData.update_status_to_next():
                     return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
@@ -335,74 +336,6 @@ def check_in(request):
     
     return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def pick_up(request):
-    try:
-        now = datetime.now(pytz.timezone('Asia/Bangkok'))
-        year_expired_date = now - timedelta(days = 400)
-
-        request_id = request.data.get('request_id')
-        emp_name = request.data.get('emp_name')
-
-        request_obj = get_object_or_404(Request, id = request_id)
-        
-        history_items = []
-        component_relate = RequestComponentRelation.objects.filter(request = request_obj)
-        for cr in component_relate:
-            serial_numbers_obj = SerialNumber.objects.filter(request__id = request_obj.id, component = cr.component)
-            serial_numbers = []
-            for sn in serial_numbers_obj:
-                serial_numbers.append(sn.serial_number)
-            # serializers_serial_numbers = SerialNumberOnlySnSerializer(instance=serial_numbers_obj, many=True)
-
-            if(request_obj.requester_name_center):
-                request_name = f"{request_obj.requester_emp_center}, {request_obj.requester_name_center} ({request_obj.requester.username})"
-            else:
-                request_name = f"{request_obj.requester.emp_id}, {request_obj.requester.username}"
-
-
-            if(request_obj.scrap_list and not cr.component.consumable):
-                scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
-                scrap_serial_numbers = request_obj.scrap_list
-            else:
-                scrap_qty = 0
-                scrap_serial_numbers = ''
-
-            history_items.append(HistoryTrading(
-                    requester = request_name,
-                    staff_approved = request_obj.staff_approved.username,
-                    supervisor_approved = request_obj.supervisor_approved.username,
-                    trader = emp_name,
-                    left_qty = (cr.component.quantity - cr.qty),
-                    gr_qty = 0,
-                    gi_qty = (-cr.qty),
-                    scrap_qty = scrap_qty,
-                    purpose_type = request_obj.purpose_type,
-                    purpose_detail=request_obj.purpose_detail,
-                    component=cr.component,
-                    request_id = request_obj.id,
-                    serial_numbers = serial_numbers,
-                    scrap_serial_numbers = scrap_serial_numbers
-                )) 
-            
-            Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
-            serial_numbers_obj.delete()
-            cr.delete()
-
-        if not request_obj.update_status_to_next():
-            return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        HistoryTrading.objects.bulk_create(history_items)
-        request_obj.delete()
-        HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
-
-        return Response({"detail": "success"}, status=status.HTTP_200_OK)
-    except Exception as e:
-        print(str(e))
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
 @api_view(['PUT'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -465,6 +398,76 @@ def self_pick_up_list(request, emp_id):
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
+def pick_up(request):
+    try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+        year_expired_date = now - timedelta(days = 400)
+
+        request_id = request.data.get('request_id')
+        emp_name = request.data.get('emp_name')
+
+        request_obj = get_object_or_404(Request, id = request_id)
+        
+        history_items = []
+        component_relate = RequestComponentRelation.objects.filter(request = request_obj)
+        for cr in component_relate:
+            serial_numbers_obj = SerialNumber.objects.filter(request__id = request_obj.id, component = cr.component)
+            serial_numbers = []
+            for sn in serial_numbers_obj:
+                serial_numbers.append(sn.serial_number)
+            # serializers_serial_numbers = SerialNumberOnlySnSerializer(instance=serial_numbers_obj, many=True)
+
+            if(request_obj.requester_name_center):
+                request_name = f"{request_obj.requester_emp_center}, {request_obj.requester_name_center} ({request_obj.requester.username})"
+            else:
+                request_name = f"{request_obj.requester.emp_id}, {request_obj.requester.username}"
+
+
+            if(request_obj.scrap_list and not cr.component.unique_component):
+                scrap_serial_numbers = ast.literal_eval(request_obj.scrap_list)
+            else:
+                scrap_serial_numbers = []
+
+            scrap_list = [item['sn'] for item in scrap_serial_numbers if item['component_id'] == cr.component.pk]
+
+            history_items.append(HistoryTrading(
+                    requester = request_name,
+                    staff_approved = request_obj.staff_approved.username,
+                    supervisor_approved = request_obj.supervisor_approved.username,
+                    trader = emp_name,
+                    left_qty = (cr.component.quantity - cr.qty),
+                    gr_qty = 0,
+                    gi_qty = (-cr.qty),
+                    purpose_type = request_obj.purpose_type,
+                    purpose_detail=request_obj.purpose_detail,
+                    component=cr.component,
+                    request_id = request_obj.id,
+                    serial_numbers = serial_numbers,
+                    scrap_qty = len(scrap_list),
+                    scrap_serial_numbers = ', '.join(scrap_list)
+                )) 
+            
+            Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
+
+            if not cr.component.unique_component:
+                serial_numbers_obj.delete()
+            cr.delete()
+
+        if not request_obj.update_status_to_next():
+            return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        HistoryTrading.objects.bulk_create(history_items)
+        request_obj.delete()
+        HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
+
+        return Response({"detail": "success"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(str(e))
+        return Response({"detail": f"Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def set_self_pick_up(request):
     try:
         now = datetime.now(pytz.timezone('Asia/Bangkok'))
@@ -473,11 +476,12 @@ def set_self_pick_up(request):
         request_id = request.data.get('request_id')
         emp_name = request.data.get('emp_name')
         serial_numbers_input = request.data.get('serial_numbers')
+        sn_list = [item['sn'] for item in serial_numbers_input]
 
         request_obj = get_object_or_404(Request, id = request_id)
 
         Request.objects.filter(id = request_id).update(self_pickup = True)
-        SerialNumber.objects.filter(serial_number__in = serial_numbers_input).update(request = request_obj)
+        SerialNumber.objects.filter(serial_number__in = sn_list).update(request = request_obj)
         
         history_items = []
         component_relate = RequestComponentRelation.objects.filter(request = request_obj)
@@ -493,7 +497,7 @@ def set_self_pick_up(request):
                 request_name = f"{request_obj.requester.emp_id}, {request_obj.requester.username}"
 
 
-            if(request_obj.scrap_list and not cr.component.consumable):
+            if(request_obj.scrap_list and not cr.component.unique_component):
                 scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
                 scrap_serial_numbers = request_obj.scrap_list
             else:
@@ -518,8 +522,8 @@ def set_self_pick_up(request):
                 )) 
             
             Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
-            serial_numbers_obj.delete()
-            # cr.delete()
+            if not cr.component.unique_component:
+                serial_numbers_obj.delete()
 
         
         HistoryTrading.objects.bulk_create(history_items)

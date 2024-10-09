@@ -187,6 +187,10 @@ def update_component(request, pk):
             component_obj.image = image
             component_obj.save()
 
+        if unique_component.lower() == 'true':
+            qty = component_obj.quantity
+        else:
+            qty = SerialNumber.objects.filter(component = component_obj).count()
         # Update other fields
         component_obj.name = name
         component_obj.model = model
@@ -200,7 +204,7 @@ def update_component(request, pk):
         component_obj.component_type = component_type
         component_obj.department = department
         component_obj.location = location
-        component_obj.quantity = SerialNumber.objects.filter(component = component_obj).count()
+        component_obj.quantity = qty
         component_obj.quantity_warning = quantity_warning
         component_obj.quantity_alert = quantity_alert
 
@@ -289,7 +293,7 @@ def add_item_unique(request):
         balance = component_obj.quantity + quantity
         component_obj.quantity = balance
 
-        sn = f"{trader.production_area.detail}{component_obj.unique_id}-0UNIQUE"  
+        sn = f"{trader.production_area.detail}{component_obj.unique_id}-@UNIQUE"  
         component_obj.last_sn = sn
 
         component_obj.save()
@@ -456,10 +460,14 @@ def check_serial_number_list(request):
                     sn = SerialNumber.objects.filter(serial_number=serial_number["sn"], component = compObj)
                     if sn.exists():
                         item_used.append(serial_number["sn"])
-                        component_counts[component] = component_counts.get(component, 0) + 1
+                        if compObj.unique_component:
+                            component_counts[component] = serial_number["qty"]
+                        else:
+                            component_counts[component] = component_counts.get(component, 0) + 1
                         
                     else:
                         component_counts[component] = component_counts.get(component, 0)
+                        
                         
                 except SerialNumber.DoesNotExist:
                     continue  # Skip if the serial number doesn't exist in the database
