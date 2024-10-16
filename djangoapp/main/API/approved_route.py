@@ -98,7 +98,9 @@ def approval_list(request):
             elif route.staff_route == approver and route.supervisor_route == approver:
                 request_obj = Request.objects.filter(status__in = ['Requested', 'Staff'])
             else:
-                return Response({"detail": "Not found, you have no approved route."}, status=status.HTTP_404_NOT_FOUND)
+                if not approver.is_supervisor:
+                    return Response({"detail": "Not found, you have no approved route."}, status=status.HTTP_404_NOT_FOUND)
+                request_obj = Request.objects.filter(status__in = ['Requested', 'Staff'])
             
             print(approver.production_area)
 

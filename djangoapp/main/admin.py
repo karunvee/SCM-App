@@ -144,7 +144,7 @@ class HistoryTradingAdmin(admin.ModelAdmin):
         'requester'
                     )
     fieldsets = (
-        (None, {'fields': ('requester', 'issue_date')}),
+        (None, {'fields': ['requester']}),
         ('approved', {'fields': ( 'staff_approved', 'supervisor_approved', 'trader')}),
         ('quantity', {'fields': ( 'left_qty', 'gr_qty', 'gi_qty', 'scrap_qty')}),
         ('information', {'fields': ( 'purpose_detail', 'purpose_type', 'component', 'request_id', 'po_number')}),
