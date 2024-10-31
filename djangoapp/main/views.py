@@ -128,12 +128,12 @@ def basic_info(request, pda):
     ct_serializers = ComponentTypeSerializer(instance=ComponentType.objects.all(), many=True)
     d_serializers = DepartmentSerializer(instance=Department.objects.all(), many=True)
 
-    locations = Location.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea))
+    locations = Location.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('name')
     l_serializers = LocationSerializer(
         instance=locations, 
         many=True
         )
-    machineTypes = MachineType.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea))
+    machineTypes = MachineType.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('name')
     m_serializers = MachineTypeSerializer(
         instance=machineTypes, 
         many=True
@@ -167,6 +167,16 @@ def add_location(request):
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+@api_view(['DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_location(request, pk):
+
+    location_obj = get_object_or_404(Location, pk = pk)
+    location_obj.delete()
+    return Response({"detail": "%s was deleted." % pk}, status=status.HTTP_200_OK)
+
+    
 @api_view(['POST', 'PUT'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -187,3 +197,13 @@ def add_machine_type(request):
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(['DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_machine_type(request, pk):
+
+    machineType_obj = get_object_or_404(MachineType, pk = pk)
+    machineType_obj.delete()
+    return Response({"detail": "%s was deleted." % pk}, status=status.HTTP_200_OK)

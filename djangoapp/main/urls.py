@@ -11,7 +11,9 @@ urlpatterns = [
 
     path('basic_info/list/<str:pda>/', basic_info , name='basic_info'),
     path('location/list/', add_location , name='add_location'),
+    path('location/delete/<str:pk>/', delete_location , name='delete_location'),
     path('machine/type/list/', add_machine_type , name='add_machine_type'),
+    path('machine/type/delete/<str:pk>/', delete_machine_type , name='delete_machine_type'),
 
     path('storage/list/', component_list , name='component_list'),
     path('storage/list/filter/', component_filter , name='component_filter'),
@@ -59,4 +61,6 @@ urlpatterns = [
     path('po/number/history/', get_po, name='get_po'),
     path('po/number/add/', add_po, name='add_po'),
     path('po/number/<str:pn>/', mod_po, name='mod_po'),
+
+    path('po_relative_component/<str:po_number>/', po_relative_component, name='po_relative_component'),
 ]

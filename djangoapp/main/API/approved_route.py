@@ -403,7 +403,7 @@ def self_pick_up_list(request, emp_id):
 def pick_up(request):
     try:
         now = datetime.now(pytz.timezone('Asia/Bangkok'))
-        year_expired_date = now - timedelta(days = 400)
+        year_expired_date = now - timedelta(days = 2000)
 
         request_id = request.data.get('request_id')
         emp_name = request.data.get('emp_name')
@@ -460,7 +460,11 @@ def pick_up(request):
         
         HistoryTrading.objects.bulk_create(history_items)
         request_obj.delete()
+
         HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
+        poOnExpired = PO.objects.filter(issue_date__lte = year_expired_date)
+        if not SerialNumber.objects.filter(po=poOnExpired).exists():
+            poOnExpired.delete()
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -473,7 +477,7 @@ def pick_up(request):
 def set_self_pick_up(request):
     try:
         now = datetime.now(pytz.timezone('Asia/Bangkok'))
-        year_expired_date = now - timedelta(days = 400)
+        year_expired_date = now - timedelta(days = 2000)
 
         request_id = request.data.get('request_id')
         emp_name = request.data.get('emp_name')
@@ -530,6 +534,10 @@ def set_self_pick_up(request):
         
         HistoryTrading.objects.bulk_create(history_items)
         HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
+
+        poOnExpired = PO.objects.filter(issue_date__lte = year_expired_date)
+        if not SerialNumber.objects.filter(po=poOnExpired).exists():
+            poOnExpired.delete()
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:

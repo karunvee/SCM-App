@@ -126,6 +126,20 @@ def get_po(request):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def po_relative_component(request, po_number):
+    try:
+        historyObj = HistoryTrading.objects.filter(po_number__po_number = po_number)
+
+        if historyObj.exists():
+            serializer = HistoryTradingSerializer(historyObj, many=True)
+            return Response({"detail": "success", "data" : serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "no data", "data" : {}}, status=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT', 'DELETE'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])

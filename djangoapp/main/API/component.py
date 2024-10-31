@@ -483,3 +483,5 @@ def check_serial_number_list(request):
         return Response({"detail": "success", "data": lists, "diff": diff}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
