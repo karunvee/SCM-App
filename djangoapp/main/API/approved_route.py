@@ -409,7 +409,6 @@ def pick_up(request):
         emp_name = request.data.get('emp_name')
 
         request_obj = get_object_or_404(Request, id = request_id)
-        
         history_items = []
         component_relate = RequestComponentRelation.objects.filter(request = request_obj)
         for cr in component_relate:
@@ -454,7 +453,6 @@ def pick_up(request):
             if not cr.component.unique_component:
                 serial_numbers_obj.delete()
             cr.delete()
-
         if not request_obj.update_status_to_next():
             return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -463,8 +461,9 @@ def pick_up(request):
 
         HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
         poOnExpired = PO.objects.filter(issue_date__lte = year_expired_date)
-        if not SerialNumber.objects.filter(po=poOnExpired).exists():
-            poOnExpired.delete()
+        for pE in poOnExpired:
+            if not SerialNumber.objects.filter(po=pE).exists():
+                poOnExpired.delete()
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -536,8 +535,9 @@ def set_self_pick_up(request):
         HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
 
         poOnExpired = PO.objects.filter(issue_date__lte = year_expired_date)
-        if not SerialNumber.objects.filter(po=poOnExpired).exists():
-            poOnExpired.delete()
+        for pE in poOnExpired:
+            if not SerialNumber.objects.filter(po=pE).exists():
+                poOnExpired.delete()
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:

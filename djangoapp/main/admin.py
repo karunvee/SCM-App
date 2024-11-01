@@ -74,6 +74,7 @@ class ComponentAdmin(admin.ModelAdmin):
     search_fields = ['name', 'model', 'supplier']
     list_display = (
         'name',
+        'unique_id',
         'pk',
         'quantity',
         'model',

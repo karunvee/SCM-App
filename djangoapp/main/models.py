@@ -3,9 +3,19 @@ from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group, Permission
 import uuid
+import random
+import string
 
 # Create your models here.
-    
+def generate_unique_id():
+    length = 5
+    characters = string.ascii_uppercase + string.digits
+    unique_id = ''.join(random.choices(characters, k=length))
+    # Check if this ID is already in use
+    while Component.objects.filter(unique_id=unique_id).exists():
+        unique_id = ''.join(random.choices(characters, k=length))
+    return unique_id
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, username, password=None):
         if not email:
@@ -94,7 +104,7 @@ class Component(models.Model):
     description = models.CharField(max_length = 250, blank = True)
     component_type = models.ForeignKey(ComponentType, on_delete=models.CASCADE)
     machine_type = models.ForeignKey(MachineType, on_delete=models.CASCADE)
-    unique_id = models.CharField(max_length = 3, blank = False) 
+    unique_id = models.CharField(max_length=5, unique=True, default=generate_unique_id, editable=False)
     
     supplier = models.CharField(max_length = 250, blank = True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
@@ -117,6 +127,14 @@ class Component(models.Model):
             return self.image.url
         else:
             return ''
+        
+    def save(self, *args, **kwargs):
+        if not self.unique_id:
+            new_unique_id = generate_unique_id()
+            while Component.objects.filter(unique_id=new_unique_id).exists():
+                new_unique_id = generate_unique_id()
+            self.unique_id = new_unique_id
+        super().save(*args, **kwargs)
         
     def __str__(self):
         return "%s, %s" % (self.name, self.model)

@@ -111,7 +111,7 @@ def add_component(request):
         description = request.data.get('description')
         self_pickup = request.data.get('self_pickup')
         unique_component = request.data.get('unique_component')
-        unique_id = request.data.get('unique_id')
+        # unique_id = request.data.get('unique_id')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
 
@@ -133,7 +133,7 @@ def add_component(request):
             self_pickup = self_pickup.lower() == 'true',
             unique_component = unique_component.lower() == 'true',
             description=description,
-            unique_id=unique_id.upper(),
+            # unique_id=unique_id.upper(),
             price=price,
             supplier=supplier,
             machine_type=machine_type,
@@ -170,7 +170,7 @@ def update_component(request, pk):
         description = request.data.get('description')
         self_pickup = request.data.get('self_pickup')
         unique_component = request.data.get('unique_component')
-        unique_id = request.data.get('unique_id')
+        # unique_id = request.data.get('unique_id')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
 
@@ -197,7 +197,7 @@ def update_component(request, pk):
         component_obj.self_pickup = self_pickup.lower() == 'true'
         component_obj.unique_component = unique_component.lower() == 'true'
         component_obj.description = description
-        component_obj.unique_id = unique_id.upper()
+        # component_obj.unique_id = unique_id.upper()
         component_obj.price = price
         component_obj.supplier = supplier
         component_obj.machine_type = machine_type
@@ -340,7 +340,7 @@ def get_item(request):
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def generate_unique_id(component_id, i, last_sn):
+def generate_unique_sn(component_id, i, last_sn):
     
     # if not snExist:
     #     last_id = i
@@ -404,7 +404,7 @@ def generate_serial_number(request):
     
             sn_list = []
             for i in range(int(quantity)):
-                txt = f"{member.production_area.detail}{component.unique_id}-{generate_unique_id(component_id, i, last_sn)}"  
+                txt = f"{member.production_area.detail}{component.unique_id}-{generate_unique_sn(component_id, i, last_sn)}"  
                 print(txt)
                 sn_list.append(txt)
 
