@@ -43,7 +43,7 @@ class ComponentSerializer(serializers.ModelSerializer):
         model = Component
         fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier',
                   'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
-                  'quantity', 'quantity_warning', 'quantity_alert', 
+                  'quantity', 'quantity_warning', 'quantity_alert', 'last_invent_date', 'next_invent_date',
                   'consumable', 'image', 'serial_numbers']
 
 class ComponentWithoutSerialsSerializer(serializers.ModelSerializer):
@@ -153,6 +153,12 @@ class ApprovedRouteSerializer(serializers.ModelSerializer):
         model = ApprovedRoute
         fields = '__all__'
 
+class InventoryReportSerializer(serializers.ModelSerializer):
+    component = ComponentInfoSerializer()
+    class Meta(object):
+        model = InventoryReport
+        fields = '__all__'
+
 # Params
 class ComponentProdNameQuerySerializer(serializers.Serializer):
     production_name = serializers.CharField()
@@ -193,7 +199,7 @@ class ProdAreaNameQuerySerializer(serializers.Serializer):
 class ProdAreaNamePaginatorQuerySerializer(serializers.Serializer):
     date_start = serializers.CharField()
     date_end = serializers.CharField()
-    component_name = serializers.CharField()
+    search = serializers.CharField()
     production_area_name = serializers.CharField()
     # page_number = serializers.IntegerField()
     # qty_per_page = serializers.IntegerField()

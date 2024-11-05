@@ -63,4 +63,5 @@ urlpatterns = [
     path('po/number/<str:pn>/', mod_po, name='mod_po'),
 
     path('po_relative_component/<str:po_number>/', po_relative_component, name='po_relative_component'),
+    path('inventory_report/<str:location>/', inventory_report, name='inventory_report'),
 ]

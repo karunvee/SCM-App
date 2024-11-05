@@ -121,6 +121,10 @@ class Component(models.Model):
 
     last_sn = models.CharField(max_length = 100, blank = True)
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE)
+
+    last_invent_date = models.DateTimeField(default=timezone.now)
+    next_invent_date = models.DateTimeField(default=timezone.now)
+
     @property
     def image_url(self):
         if self.image:
@@ -255,3 +259,15 @@ class HistoryTrading(models.Model):
 
     def __str__(self):
         return self.requester
+
+class InventoryReport(models.Model):
+    STATUS = (('Abnormal', 'Abnormal'), ('Normal', 'Normal'))
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+
+    status = models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])
+    inventory_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.pk

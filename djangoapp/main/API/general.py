@@ -1,6 +1,6 @@
 import json
 from django.shortcuts import render, redirect, get_object_or_404
-
+from django.db.models import Q
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework import status
@@ -72,7 +72,7 @@ def get_grgi(request):
             # page_number = query_serializer.validated_data.get('page_number')
             # qty_per_page = query_serializer.validated_data.get('qty_per_page')
 
-            component_name = query_serializer.validated_data.get('component_name')
+            search_value = query_serializer.validated_data.get('search')
 
             date_start = datetime.strptime(date_start_str, "%m/%d/%Y")
             date_end = datetime.strptime(date_end_str, "%m/%d/%Y")
@@ -80,11 +80,19 @@ def get_grgi(request):
             # if date_start == date_end:
             date_end = date_end + timedelta(hours=23, minutes=59)
                 
-            print(component_name)
-            if component_name == 'None':
+            
+            if search_value == 'None':
                 pdAreaObj = HistoryTrading.objects.filter(component__production_area__prod_area_name = production_area_name, issue_date__range=(date_start, date_end)).order_by('-issue_date')
             else:
-                pdAreaObj = HistoryTrading.objects.filter(component__name__exact = component_name, component__production_area__prod_area_name = production_area_name, issue_date__range=(date_start, date_end)).order_by('-issue_date')
+                # by only one string
+                pdAreaObj = HistoryTrading.objects.filter(
+                                                        Q(component__name__icontains=search_value) |
+                                                        Q(component__model__icontains=search_value) |
+                                                        Q(component__supplier__icontains=search_value) |
+                                                        Q(po_number__po_number__icontains=search_value) |
+                                                        Q(requester__icontains=search_value) |
+                                                        Q(serial_numbers__icontains=search_value),
+                                                        component__production_area__prod_area_name = production_area_name, issue_date__range=(date_start, date_end)).order_by('-issue_date') 
             
             total_rows = pdAreaObj.count()
 
@@ -93,7 +101,7 @@ def get_grgi(request):
             tt_scrap = 0
             for item in pdAreaObj:
                 tt_gr = tt_gr + item.gr_qty
-                tt_gi = tt_gi + (item.gi_qty * -1)
+                tt_gi = tt_gi + item.gi_qty # tt_gi + (item.gi_qty * -1)
                 tt_scrap = tt_scrap + item.scrap_qty
             
             # paginator = Paginator(pdAreaObj, qty_per_page) 
@@ -159,5 +167,24 @@ def mod_po(request, pn):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def inventory_report(request, location):
+    print(location)
+    try:
+        if location == 'all':
+            invtObj = InventoryReport.objects.all().order_by('status').order_by('component__next_invent_date')
+        else:
+            invtObj = InventoryReport.objects.filter(component__location__name = location).order_by('status').order_by('component__next_invent_date')
+
+        serializer = InventoryReportSerializer(instance = invtObj, many=True)
+
+
+        return Response({"detail": "no data", "data" : serializer.data }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 def deleteAll():
     HistoryTrading.objects.all().delete()
