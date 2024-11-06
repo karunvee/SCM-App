@@ -122,8 +122,8 @@ class Component(models.Model):
     last_sn = models.CharField(max_length = 100, blank = True)
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE)
 
-    last_invent_date = models.DateTimeField(default=timezone.now)
-    next_invent_date = models.DateTimeField(default=timezone.now)
+    last_inventory_date = models.DateTimeField(default=timezone.now)
+    next_inventory_date = models.DateTimeField(default=timezone.now)
 
     @property
     def image_url(self):
@@ -132,16 +132,8 @@ class Component(models.Model):
         else:
             return ''
         
-    def save(self, *args, **kwargs):
-        if not self.unique_id:
-            new_unique_id = generate_unique_id()
-            while Component.objects.filter(unique_id=new_unique_id).exists():
-                new_unique_id = generate_unique_id()
-            self.unique_id = new_unique_id
-        super().save(*args, **kwargs)
-        
     def __str__(self):
-        return "%s, %s" % (self.name, self.model)
+        return f"{self.name}, {self.model}"
 
 class PO(models.Model):
     po_number = models.CharField(max_length = 250, blank = True)
@@ -270,4 +262,4 @@ class InventoryReport(models.Model):
     inventory_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.pk
+        return f"{self.component.name}, {self.status}"

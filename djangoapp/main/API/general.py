@@ -174,14 +174,14 @@ def inventory_report(request, location):
     print(location)
     try:
         if location == 'all':
-            invtObj = InventoryReport.objects.all().order_by('status').order_by('component__next_invent_date')
+            invtObj = InventoryReport.objects.all().order_by('status', '-component__next_inventory_date')
         else:
-            invtObj = InventoryReport.objects.filter(component__location__name = location).order_by('status').order_by('component__next_invent_date')
+            invtObj = InventoryReport.objects.filter(component__location__name = location).order_by('status', '-component__next_inventory_date')
 
-        serializer = InventoryReportSerializer(instance = invtObj, many=True)
+        serializer_report = InventoryReportSerializer(instance = invtObj, many=True)
 
 
-        return Response({"detail": "no data", "data" : serializer.data }, status=status.HTTP_200_OK)
+        return Response({"detail": "success", "report_list" : serializer_report.data }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
