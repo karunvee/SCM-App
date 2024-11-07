@@ -125,6 +125,8 @@ class Component(models.Model):
     last_inventory_date = models.DateTimeField(default=timezone.now)
     next_inventory_date = models.DateTimeField(default=timezone.now)
 
+    equipment_type =  models.CharField(max_length = 250, blank=True)
+
     @property
     def image_url(self):
         if self.image:

@@ -171,18 +171,22 @@ def mod_po(request, pn):
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def inventory_report(request, location):
-    print(location)
     try:
         if location == 'all':
             invtObj = InventoryReport.objects.all().order_by('status', '-component__next_inventory_date')
+
+            compObj = Component.objects.all().order_by('name')
         else:
             invtObj = InventoryReport.objects.filter(component__location__name = location).order_by('status', '-component__next_inventory_date')
 
+            compObj = Component.objects.filter(location__name = location).order_by('name')
+
         serializer_report = InventoryReportSerializer(instance = invtObj, many=True)
+        serializer_comp = ComponentWithoutSerialsSerializer(instance = compObj, many=True)
 
-
-        return Response({"detail": "success", "report_list" : serializer_report.data }, status=status.HTTP_200_OK)
+        return Response({"detail": "success", "report_list" : serializer_report.data, "component_list": serializer_comp.data }, status=status.HTTP_200_OK)
     except Exception as e:
+        print(e)
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
