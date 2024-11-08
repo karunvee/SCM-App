@@ -115,6 +115,10 @@ def add_component(request):
         price = request.data.get('price')
         supplier = request.data.get('supplier')
 
+        comObj = Component.objects.filter(model__iexact = model)
+        if comObj.exists():
+            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck."}, status=status.HTTP_409_CONFLICT)
+
         machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'))
         component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
         department = get_object_or_404(Department, name=request.data.get('department'))
@@ -173,6 +177,10 @@ def update_component(request, pk):
         # unique_id = request.data.get('unique_id')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
+
+        comObj = Component.objects.filter(model__iexact = model)
+        if comObj.exists():
+            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck."}, status=status.HTTP_409_CONFLICT)
 
         machine_type, ct_created = MachineType.objects.get_or_create(name=request.data.get('machine_type'), defaults={})
         component_type, ct_created = ComponentType.objects.get_or_create(name=request.data.get('component_type'), defaults={})
@@ -484,4 +492,9 @@ def check_serial_number_list(request):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
-
+@api_view(['GET'])
+def component_model_exist_checking(request, model):
+        comObj = Component.objects.filter(model__iexact = model)
+        if comObj.exists():
+            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck."}, status=status.HTTP_409_CONFLICT)
+        return Response({"detail": f"pass"}, status=status.HTTP_202_ACCEPTED)

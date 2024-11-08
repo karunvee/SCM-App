@@ -43,6 +43,7 @@ urlpatterns = [
 
 
     path('component/add/', add_component , name='add_component'),
+    path('component/checking/model_exist/<str:model>/', component_model_exist_checking , name='component_model_exist_checking'),
     path('component/update/<int:pk>/', update_component , name='update_component'),
     path('component/delete/<int:pk>/', delete_component , name='delete_component'),
     path('component/list/information/', info_component_list , name='info_component_list'),
