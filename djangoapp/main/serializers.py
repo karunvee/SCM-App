@@ -55,7 +55,7 @@ class ComponentWithoutSerialsSerializer(serializers.ModelSerializer):
         model = Component
         fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier',
                   'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
-                  'quantity', 'quantity_warning', 'quantity_alert', 
+                  'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date',
                   'consumable', 'image']
 
 class ComponentInfoSerializer(serializers.ModelSerializer):

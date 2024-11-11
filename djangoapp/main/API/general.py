@@ -182,7 +182,7 @@ def inventory_report(request, location):
             compObj = Component.objects.filter(location__name = location).order_by('name')
 
         serializer_report = InventoryReportSerializer(instance = invtObj, many=True)
-        serializer_comp = ComponentWithoutSerialsSerializer(instance = compObj, many=True)
+        serializer_comp = ComponentSerializer(instance = compObj, many=True)
 
         return Response({"detail": "success", "report_list" : serializer_report.data, "component_list": serializer_comp.data }, status=status.HTTP_200_OK)
     except Exception as e:
