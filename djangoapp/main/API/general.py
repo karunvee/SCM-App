@@ -173,11 +173,11 @@ def mod_po(request, pn):
 def inventory_report(request, location):
     try:
         if location == 'all':
-            invtObj = InventoryReport.objects.all().order_by('status', '-component__next_inventory_date')
+            invtObj = InventoryReport.objects.all().order_by('status', '-component__next_inventory_date', 'component__last_inventory_date')
 
             compObj = Component.objects.all().order_by('name')
         else:
-            invtObj = InventoryReport.objects.filter(component__location__name = location).order_by('status', '-component__next_inventory_date')
+            invtObj = InventoryReport.objects.filter(component__location__name = location).order_by('status', '-component__next_inventory_date', 'component__last_inventory_date')
 
             compObj = Component.objects.filter(location__name = location).order_by('name')
 
@@ -189,6 +189,38 @@ def inventory_report(request, location):
         print(e)
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def submit_inventory_report(request):
+    try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+
+        rs_status = request.data.get('status')
+        missing_list = request.data.get('missing_list')
+        component_id = request.data.get('component_id')
+
+        compObj = get_object_or_404(Component, id = component_id)
+        compObj.last_inventory_date = now
+        compObj.next_inventory_date = now + timedelta(days = 180)
+        compObj.save()
+
+        inventObj = InventoryReport.objects.create(
+            component = compObj,
+            missing_list = missing_list,
+            status = rs_status
+        )
+
+        serializer = InventoryReportSerializer(instance = inventObj)
+
+        return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 def deleteAll():
-    HistoryTrading.objects.all().delete()
+    try:
+        HistoryTrading.objects.all().delete()
+    except Exception as e:
+        return Response({str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

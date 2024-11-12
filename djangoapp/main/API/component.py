@@ -499,41 +499,41 @@ def component_model_exist_checking(request, model):
             return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck."}, status=status.HTTP_409_CONFLICT)
         return Response({"detail": f"pass"}, status=status.HTTP_202_ACCEPTED)
 
-@api_view(['POST'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def inventory_serial_number_list(request):
-    try:
-        sn_list = request.data.get('sn_list')
-        component_ld = request.data.get('component_id')
-        item_used = []
-        component_counts = {}
+# @api_view(['POST'])
+# @authentication_classes([SessionAuthentication, TokenAuthentication])
+# @permission_classes([IsAuthenticated])
+# def inventory_serial_number_list(request):
+#     try:
+#         sn_list = request.data.get('sn_list')
+#         component_ld = request.data.get('component_id')
+#         item_used = []
+#         component_counts = {}
 
-        for serial_number in sn_list:
-            try:
-                compObj = Component.objects.get(pk = component_ld)
-                sn = SerialNumber.objects.filter(serial_number=serial_number["sn"], component = compObj)
-                if sn.exists():
-                    item_used.append(serial_number["sn"])
-                    if compObj.unique_component:
-                        component_counts[component_ld] = serial_number["qty"]
-                    else:
-                        component_counts[component_ld] = component_counts.get(component_ld, 0) + 1
+#         for serial_number in sn_list:
+#             try:
+#                 compObj = Component.objects.get(pk = component_ld)
+#                 sn = SerialNumber.objects.filter(serial_number=serial_number["sn"], component = compObj)
+#                 if sn.exists():
+#                     item_used.append(serial_number["sn"])
+#                     if compObj.unique_component:
+#                         component_counts[component_ld] = serial_number["qty"]
+#                     else:
+#                         component_counts[component_ld] = component_counts.get(component_ld, 0) + 1
                     
-                else:
-                    component_counts[component_ld] = component_counts.get(component_ld, 0)
+#                 else:
+#                     component_counts[component_ld] = component_counts.get(component_ld, 0)
                     
                     
-            except SerialNumber.DoesNotExist:
-                continue  # Skip if the serial number doesn't exist in the database
-        data = {
-                "id": component_ld,
-                "qty": component_counts[component_ld],
-                "unique_component": compObj.unique_component
-            }
-        s = set(item_used)
-        diff = [x["sn"] for x in sn_list if x["sn"] not in s]
+#             except SerialNumber.DoesNotExist:
+#                 continue  # Skip if the serial number doesn't exist in the database
+#         data = {
+#                 "id": component_ld,
+#                 "qty": component_counts[component_ld],
+#                 "unique_component": compObj.unique_component
+#             }
+#         s = set(item_used)
+#         diff = [x["sn"] for x in sn_list if x["sn"] not in s]
 
-        return Response({"detail": "success", "data": data, "diff": diff}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+#         return Response({"detail": "success", "data": data, "diff": diff}, status=status.HTTP_200_OK)
+#     except Exception as e:
+#         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
