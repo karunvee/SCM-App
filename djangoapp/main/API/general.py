@@ -172,19 +172,29 @@ def mod_po(request, pn):
 @permission_classes([IsAuthenticated])
 def inventory_report(request, location):
     try:
-        if location == 'all':
-            invtObj = InventoryReport.objects.all().order_by('status', '-component__next_inventory_date', 'component__last_inventory_date')
+        query_serializer = EmployeeIdQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            emp_id = query_serializer.validated_data.get('emp_id')
 
-            compObj = Component.objects.all().order_by('name')
-        else:
-            invtObj = InventoryReport.objects.filter(component__location__name = location).order_by('status', '-component__next_inventory_date', 'component__last_inventory_date')
+            requesterObj = get_object_or_404(Member, emp_id = emp_id)
 
-            compObj = Component.objects.filter(location__name = location).order_by('name')
+            if location == 'all':
+                invtObj = InventoryReport.objects.filter(component__location__production_area = requesterObj.production_area).order_by('-inventory_date')
 
-        serializer_report = InventoryReportSerializer(instance = invtObj, many=True)
-        serializer_comp = ComponentSerializer(instance = compObj, many=True)
+                compObj = Component.objects.filter(location__production_area = requesterObj.production_area).order_by('name')
+            else:
+                invtObj = InventoryReport.objects.filter(component__location__production_area = requesterObj.production_area, 
+                                                         component__location__name = location).order_by('-inventory_date')
 
-        return Response({"detail": "success", "report_list" : serializer_report.data, "component_list": serializer_comp.data }, status=status.HTTP_200_OK)
+                compObj = Component.objects.filter(location__production_area = requesterObj.production_area, 
+                                                   location__name = location).order_by('name')
+
+            serializer_report = InventoryReportSerializer(instance = invtObj, many=True)
+            serializer_comp = ComponentSerializer(instance = compObj, many=True)
+
+            return Response({"detail": "success", "report_list" : serializer_report.data, "component_list": serializer_comp.data }, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(e)
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

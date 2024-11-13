@@ -277,27 +277,36 @@ def preparing_list(request):
 @permission_classes([IsAuthenticated])
 def all_request_list(request):
     try:
-        request_obj = Request.objects.all()
-        requests_serializer = RequestSerializer(instance=request_obj, many=True)
-        # Custom Serializer Data
-        for req in requests_serializer.data:
-            reqRel = RequestComponentRelation.objects.filter(request__id = req['id'])
-            req['components'] = []
-            for reqRelIndex in reqRel:
-                req['components'].append({
-                    'id': reqRelIndex.id,
-                    'component_id' : reqRelIndex.component.pk,
-                    'component_name' : reqRelIndex.component.name,
-                    'component_model' : reqRelIndex.component.model,
-                    'component_machine_type' : reqRelIndex.component.machine_type.name,
-                    'component_component_type' : reqRelIndex.component.component_type.name,
-                    'component_image' : reqRelIndex.component.image_url,
-                    'location' : reqRelIndex.component.location.name,
-                    'qty' : reqRelIndex.qty,
-                    'serial_numbers': []
-                })
+        query_serializer = EmployeeIdQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            emp_id = query_serializer.validated_data.get('emp_id')
 
-        return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
+            requesterObj = get_object_or_404(Member, emp_id = emp_id)
+
+            request_obj = Request.objects.filter(requester__production_area = requesterObj.production_area)
+            
+            requests_serializer = RequestSerializer(instance=request_obj, many=True)
+            # Custom Serializer Data
+            for req in requests_serializer.data:
+                reqRel = RequestComponentRelation.objects.filter(request__id = req['id'])
+                req['components'] = []
+                for reqRelIndex in reqRel:
+                    req['components'].append({
+                        'id': reqRelIndex.id,
+                        'component_id' : reqRelIndex.component.pk,
+                        'component_name' : reqRelIndex.component.name,
+                        'component_model' : reqRelIndex.component.model,
+                        'component_machine_type' : reqRelIndex.component.machine_type.name,
+                        'component_component_type' : reqRelIndex.component.component_type.name,
+                        'component_image' : reqRelIndex.component.image_url,
+                        'location' : reqRelIndex.component.location.name,
+                        'qty' : reqRelIndex.qty,
+                        'serial_numbers': []
+                    })
+
+            return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
