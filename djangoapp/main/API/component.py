@@ -111,13 +111,14 @@ def add_component(request):
         description = request.data.get('description')
         self_pickup = request.data.get('self_pickup')
         unique_component = request.data.get('unique_component')
-        # unique_id = request.data.get('unique_id')
+        equipment_type = request.data.get('equipment_type')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
 
         comObj = Component.objects.filter(model__iexact = model)
         if comObj.exists():
-            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck."}, status=status.HTTP_409_CONFLICT)
+            serializer_comp_duplicate = ComponentSerializer(instance = comObj)
+            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck.", "data": serializer_comp_duplicate.data}, status=status.HTTP_409_CONFLICT)
 
         machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'))
         component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
@@ -137,7 +138,7 @@ def add_component(request):
             self_pickup = self_pickup.lower() == 'true',
             unique_component = unique_component.lower() == 'true',
             description=description,
-            # unique_id=unique_id.upper(),
+            equipment_type=equipment_type.upper(),
             price=price,
             supplier=supplier,
             machine_type=machine_type,
@@ -174,13 +175,14 @@ def update_component(request, pk):
         description = request.data.get('description')
         self_pickup = request.data.get('self_pickup')
         unique_component = request.data.get('unique_component')
-        # unique_id = request.data.get('unique_id')
+        equipment_type = request.data.get('equipment_type')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
 
-        comObj = Component.objects.filter(model__iexact = model)
+        comObj = Component.objects.filter(model__iexact = model).exclude(pk = pk)
         if comObj.exists():
-            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck."}, status=status.HTTP_409_CONFLICT)
+            serializer_comp_duplicate = ComponentWithoutSerialsSerializer(instance = comObj.get())
+            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck.", "data": serializer_comp_duplicate.data}, status=status.HTTP_409_CONFLICT)
 
         machine_type, ct_created = MachineType.objects.get_or_create(name=request.data.get('machine_type'), defaults={})
         component_type, ct_created = ComponentType.objects.get_or_create(name=request.data.get('component_type'), defaults={})
@@ -205,7 +207,7 @@ def update_component(request, pk):
         component_obj.self_pickup = self_pickup.lower() == 'true'
         component_obj.unique_component = unique_component.lower() == 'true'
         component_obj.description = description
-        # component_obj.unique_id = unique_id.upper()
+        component_obj.equipment_type = equipment_type.upper()
         component_obj.price = price
         component_obj.supplier = supplier
         component_obj.machine_type = machine_type
@@ -496,7 +498,8 @@ def check_serial_number_list(request):
 def component_model_exist_checking(request, model):
         comObj = Component.objects.filter(model__iexact = model)
         if comObj.exists():
-            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck."}, status=status.HTTP_409_CONFLICT)
+            serializer_comp_duplicate = ComponentSerializer(instance = comObj)
+            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck.", "data": serializer_comp_duplicate.data}, status=status.HTTP_409_CONFLICT)
         return Response({"detail": f"pass"}, status=status.HTTP_202_ACCEPTED)
 
 # @api_view(['POST'])

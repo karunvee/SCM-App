@@ -34,6 +34,13 @@ class CustomUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+class CostCenter(models.Model):
+    name = models.CharField(max_length = 255, unique=True)
+    cost_center_number = models.CharField(max_length = 255, unique=True)
+
+    def __str__(self):
+        return f'{self.name}, {self.cost_center_number}'
+
 class ProductionArea(models.Model):
     prod_area_name = models.CharField(max_length = 255, unique=True)
     description = models.CharField(max_length = 255)
@@ -48,6 +55,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length = 200)
     department = models.CharField(max_length = 250)
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
+    cost_center = models.ForeignKey(CostCenter, on_delete=models.CASCADE, blank=True, null=True)
 
     email = models.EmailField(unique=True)
 

@@ -1,4 +1,5 @@
 import json
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
 from rest_framework.authtoken.models import Token
@@ -8,6 +9,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.core.paginator import Paginator
+import requests
 
 import pytz
 from datetime import datetime, timedelta
@@ -228,6 +230,21 @@ def submit_inventory_report(request):
         print(e)
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def proxy_image(request, equip_type):
+    image_url = f"http://10.150.192.16/images/{equip_type}.jpg"
+    response = requests.get(image_url, stream=True)
+        
+        # Check if the image was retrieved successfully
+    if response.status_code == 200:
+        # Create an HTTP response with the image content
+        return HttpResponse(response.content, content_type="image/png")
+    else:
+        # Return a 404 if the image was not found or an error occurred
+        return HttpResponse(status=404)
 
 def deleteAll():
     try:

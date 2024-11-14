@@ -59,6 +59,15 @@ class SerialNumberInline(admin.TabularInline):  # Use 'StackedInline' for a diff
     model = SerialNumber
     extra = 1 
 
+class CostCenterAdmin(admin.ModelAdmin):
+    search_fields = ['name', 'cost_center_number']
+    list_display = (
+        'cost_center_number',
+        'name',
+        'id',
+                    )
+admin.site.register(CostCenter, CostCenterAdmin)
+
 class ProductionAreaAdmin(admin.ModelAdmin):
     search_fields = ['id', 'prod_area_name']
     list_display = (
