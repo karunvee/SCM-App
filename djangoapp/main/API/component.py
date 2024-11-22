@@ -21,7 +21,7 @@ def component_list(request):
         if query_serializer.is_valid():
             production_name = query_serializer.validated_data.get('production_name')
             component_list = Component.objects.filter(production_area__prod_area_name = production_name).order_by('name')
-            serializers = ComponentSerializer(instance=component_list, many=True)
+            serializers = ComponentWithoutSerialsSerializer(instance=component_list, many=True)
 
             return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
         

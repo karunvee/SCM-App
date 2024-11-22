@@ -85,7 +85,7 @@ def login_user(request):
             else:
                 e_code, e_msg, valid = validate_credentials(username, ad_server, password)
                 if not valid:
-                    return Response({"detail": "Credentials are invalid. please check your username or password."})
+                    return Response({"detail": "Credentials are invalid. please check your username or password."}, status=status.HTTP_409_CONFLICT)
             token, create = Token.objects.get_or_create(user=user)
             serializer = MemberSerializer(instance=user)
             return Response({"detail": "success", "token": token.key, "data": serializer.data}, status=status.HTTP_200_OK)

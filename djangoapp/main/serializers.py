@@ -9,17 +9,17 @@ class DepartmentSerializer(serializers.ModelSerializer):
 class ComponentTypeSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = ComponentType
-        fields = ['name']
+        fields = ['id', 'name']
 
 class LocationSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Location
-        fields = ['pk', 'name']
+        fields = ['id', 'name']
 
 class MachineTypeSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = MachineType
-        fields = ['pk', 'name']
+        fields = ['id', 'name']
 
 class PoSerializer(serializers.ModelSerializer):
     class Meta(object):
