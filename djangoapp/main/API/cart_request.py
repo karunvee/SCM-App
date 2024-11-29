@@ -89,7 +89,7 @@ def my_request(request):
         query_serializer = RequestEmployeeIdQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
             emp_id = query_serializer.validated_data.get('emp_id')
-            requests = Request.objects.exclude(status='PickUp').filter(requester__emp_id = emp_id)
+            requests = Request.objects.exclude(status='PickUp').filter(requester__emp_id = emp_id).order_by('-issue_date')
             requests_serializer = RequestSerializer(instance=requests, many=True)
             # Custom Serializer Data
             for req in requests_serializer.data:
@@ -105,6 +105,7 @@ def my_request(request):
                         'component_component_type' : reqRelIndex.component.component_type.name,
                         'component_image' : reqRelIndex.component.image_url,
                         'component_consumable' : reqRelIndex.component.consumable,
+                        'location' : reqRelIndex.component.location.name,
                         'qty' : reqRelIndex.qty,
                         'serial_numbers': []
                     })

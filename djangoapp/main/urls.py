@@ -10,13 +10,13 @@ urlpatterns = [
     path('approved/route/info/', get_approved_route , name='get_approved_route'),    
 
     path('basic_info/list/<str:pda>/', basic_info , name='basic_info'),
-    path('location/list/', add_location , name='add_location'),
-    path('location/delete/<str:pk>/', delete_location , name='delete_location'),
-    path('machine/type/list/', add_machine_type , name='add_machine_type'),
-    path('machine/type/delete/<str:pk>/', delete_machine_type , name='delete_machine_type'),
+    path('location/add/', add_location , name='add_location'),
+    path('location/delete/<str:id>/', delete_location , name='delete_location'),
+    path('machine/type/add/', add_machine_type , name='add_machine_type'),
+    path('machine/type/delete/<str:id>/', delete_machine_type , name='delete_machine_type'),
 
-    path('storage/list/', component_list , name='component_list'),
-    path('storage/list/filter/', component_filter , name='component_filter'),
+    path('storage/list/', component_list , name='component_list'), # without Serial Number List
+    path('storage/list/filter/', component_filter , name='component_filter'), # with Serial Number List
     path('storage/item/info/', component_get_one , name='component_get_one'),
 
     path('component/info/cart/', component_cart , name='component_cart'),

@@ -232,8 +232,6 @@ def submit_inventory_report(request):
 
 
 @api_view(['GET'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def proxy_image(request, equip_type):
     image_url = f"http://10.150.192.16/images/{equip_type}.jpg"
     response = requests.get(image_url, stream=True)

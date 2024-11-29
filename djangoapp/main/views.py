@@ -153,14 +153,19 @@ def basic_info(request, pda):
 def add_location(request):
     try:
         location_name = request.data.get('name')
+        prod_area_name = request.data.get('prod_area_name')
+        id = request.data.get('id')
+
+        print(f"{request.method}, {location_name}, {prod_area_name}, {id}")
+        if Location.objects.filter(name = location_name, production_area__prod_area_name = prod_area_name).exists():
+            return Response({"detail": "Duplicated, this location already exist in the list."}, status=status.HTTP_409_CONFLICT)
+        
         if request.method == 'POST':
-            prod_area_name = request.data.get('prod_area_name')
             Location.objects.create(
                 name = location_name,
                 production_area = get_object_or_404(ProductionArea, prod_area_name = prod_area_name)
             )
         elif request.method == 'PUT':
-            id = request.data.get('id')
             Location.objects.filter(id = id).update(name = location_name)
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
@@ -170,11 +175,11 @@ def add_location(request):
 @api_view(['DELETE'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def delete_location(request, pk):
+def delete_location(request, id):
 
-    location_obj = get_object_or_404(Location, pk = pk)
+    location_obj = get_object_or_404(Location, pk = id)
     location_obj.delete()
-    return Response({"detail": "%s was deleted." % pk}, status=status.HTTP_200_OK)
+    return Response({"detail": "%s was deleted." % id}, status=status.HTTP_200_OK)
 
     
 @api_view(['POST', 'PUT'])
@@ -183,15 +188,19 @@ def delete_location(request, pk):
 def add_machine_type(request):
     try:
         machine_type_name = request.data.get('name')
+        prod_area_name = request.data.get('prod_area_name')
+        id = request.data.get('id')
+    
+        print(f"{request.method}, {machine_type_name}, {prod_area_name}, {id}")
+        if MachineType.objects.filter(name = machine_type_name, production_area__prod_area_name = prod_area_name).exists():
+            return Response({"detail": "Duplicated, this machine type already exist in the list."}, status=status.HTTP_409_CONFLICT)
+        
         if request.method == 'POST':
-            prod_area_name = request.data.get('prod_area_name')
-            print(prod_area_name)
             MachineType.objects.create(
                 name = machine_type_name,
                 production_area = get_object_or_404(ProductionArea, prod_area_name = prod_area_name)
             )
         elif request.method == 'PUT':
-            id = request.data.get('id')
             MachineType.objects.filter(id = id).update(name = machine_type_name)
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
@@ -202,8 +211,8 @@ def add_machine_type(request):
 @api_view(['DELETE'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def delete_machine_type(request, pk):
+def delete_machine_type(request, id):
 
-    machineType_obj = get_object_or_404(MachineType, pk = pk)
+    machineType_obj = get_object_or_404(MachineType, pk = id)
     machineType_obj.delete()
-    return Response({"detail": "%s was deleted." % pk}, status=status.HTTP_200_OK)
+    return Response({"detail": "%s was deleted." % id}, status=status.HTTP_200_OK)
