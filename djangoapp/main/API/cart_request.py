@@ -106,6 +106,7 @@ def my_request(request):
                         'component_image' : reqRelIndex.component.image_url,
                         'component_consumable' : reqRelIndex.component.consumable,
                         'location' : reqRelIndex.component.location.name,
+                        'self_pickup' : reqRelIndex.component.self_pickup,
                         'qty' : reqRelIndex.qty,
                         'serial_numbers': []
                     })
