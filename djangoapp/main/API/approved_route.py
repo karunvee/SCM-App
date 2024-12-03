@@ -380,6 +380,8 @@ def self_pick_up_list(request, emp_id):
             enable_pickup = True
             reqRel = RequestComponentRelation.objects.filter(request__id = req['id'])
             req['components'] = []
+            all_self_pickup = True
+            
             for reqRelIndex in reqRel:
                 req['components'].append({
                     'id': reqRelIndex.id,
@@ -396,6 +398,11 @@ def self_pick_up_list(request, emp_id):
                 if not reqRelIndex.component.self_pickup: 
                     enable_pickup = False
                     break
+                
+                if not reqRelIndex.component.self_pickup:
+                    all_self_pickup = False
+
+            req['all_self_pickup'] = all_self_pickup
 
             if enable_pickup:
                 req_list.append(req)

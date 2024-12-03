@@ -95,6 +95,8 @@ def my_request(request):
             for req in requests_serializer.data:
                 reqRel = RequestComponentRelation.objects.filter(request__id = req['id'])
                 req['components'] = []
+                all_self_pickup = True
+
                 for reqRelIndex in reqRel:
                     req['components'].append({
                         'id': reqRelIndex.id,
@@ -110,6 +112,10 @@ def my_request(request):
                         'qty' : reqRelIndex.qty,
                         'serial_numbers': []
                     })
+                    if not reqRelIndex.component.self_pickup:
+                        all_self_pickup = False
+
+                req['all_self_pickup'] = all_self_pickup
             
             return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
         
