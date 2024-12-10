@@ -391,6 +391,7 @@ def self_pick_up_list(request, emp_id):
                     'component_machine_type' : reqRelIndex.component.machine_type.name,
                     'component_component_type' : reqRelIndex.component.component_type.name,
                     'component_image' : reqRelIndex.component.image_url,
+                    'unique_component' : reqRelIndex.component.unique_component,
                     'location' : reqRelIndex.component.location.name,
                     'qty' : reqRelIndex.qty,
                     'serial_numbers': []
