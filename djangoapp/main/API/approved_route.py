@@ -355,6 +355,7 @@ def scrap(request, request_id):
         scrap_list = request.data.get('scrap_list')
 
         request_obj = get_object_or_404(Request, id = request_id)
+
         request_obj.scrap_list = scrap_list
         request_obj.scrap_status = True
         request_obj.save()
@@ -462,7 +463,7 @@ def pick_up(request):
                     request_id = request_obj.id,
                     serial_numbers = serial_numbers,
                     scrap_qty = len(scrap_list),
-                    scrap_serial_numbers = ', '.join(scrap_list)
+                    scrap_serial_numbers = scrap_list
                 )) 
             
             Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
@@ -521,10 +522,12 @@ def set_self_pick_up(request):
 
             if(request_obj.scrap_list and not cr.component.unique_component):
                 scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
-                scrap_serial_numbers = request_obj.scrap_list
+                scrap_serial_numbers = ast.literal_eval(request_obj.scrap_list)
             else:
                 scrap_qty = 0
-                scrap_serial_numbers = ''
+                scrap_serial_numbers = []
+
+            scrap_sn_list = [sc['sn'] for sc in scrap_serial_numbers]
 
             history_items.append(HistoryTrading(
                     requester = request_name,
@@ -540,8 +543,8 @@ def set_self_pick_up(request):
                     component=cr.component,
                     request_id = request_obj.id,
                     serial_numbers = serial_numbers,
-                    scrap_serial_numbers = scrap_serial_numbers
-                )) 
+                    scrap_serial_numbers = scrap_sn_list
+            )) 
             
             Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
             if not cr.component.unique_component:
