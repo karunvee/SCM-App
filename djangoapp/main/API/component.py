@@ -293,7 +293,7 @@ def add_item(request):
 def add_item_unique(request):
     try:
         component_id = request.data.get('component_id')
-        quantity = request.data.get('quantity')
+        quantity = int(request.data.get('quantity'))
         po = PO.objects.get(po_number = request.data.get('po_number'))
 
         emp_id = request.data.get('emp_id')
