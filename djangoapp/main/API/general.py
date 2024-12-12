@@ -168,15 +168,43 @@ def mod_po(request, pn):
             return Response({"detail": "Method is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-    
+
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def inventory_report(request, location):
+def inventory_list(request):
     try:
-        query_serializer = EmployeeIdQuerySerializer(data = request.query_params)
+        query_serializer = EmployeeIdWithLocationQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
             emp_id = query_serializer.validated_data.get('emp_id')
+            location = query_serializer.validated_data.get('location')
+
+            requesterObj = get_object_or_404(Member, emp_id = emp_id)
+
+            if location == 'all':
+                compObj = Component.objects.filter(location__production_area = requesterObj.production_area).order_by('name')
+            else:
+                compObj = Component.objects.filter(location__production_area = requesterObj.production_area, 
+                                                   location__name = location).order_by('name')
+
+            serializer_comp = ComponentSerializer(instance = compObj, many=True)
+
+            return Response({"detail": "success", "component_list" : serializer_comp.data }, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def inventory_report(request):
+    try:
+        query_serializer = EmployeeIdWithLocationQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            emp_id = query_serializer.validated_data.get('emp_id')
+            location = query_serializer.validated_data.get('location')
 
             requesterObj = get_object_or_404(Member, emp_id = emp_id)
 

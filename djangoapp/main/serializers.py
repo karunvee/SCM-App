@@ -207,3 +207,8 @@ class ProdAreaNamePaginatorQuerySerializer(serializers.Serializer):
 class ApproveByMailQuerySerializer(serializers.Serializer):
     request_id = serializers.CharField()
     emp_id = serializers.CharField()
+
+
+class EmployeeIdWithLocationQuerySerializer(serializers.Serializer):
+    emp_id = serializers.CharField()
+    location = serializers.CharField()
