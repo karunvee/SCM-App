@@ -372,7 +372,7 @@ def scrap(request, request_id):
 @permission_classes([IsAuthenticated])
 def self_pick_up_list(request, emp_id):
     try:
-        req = Request.objects.filter(requester__emp_id = emp_id, self_pickup = False)
+        req = Request.objects.filter(requester__emp_id = emp_id, self_pickup = False).order_by('-issue_date')
         requests_serializer = RequestSerializer(instance=req, many=True)
         
         req_list = []
