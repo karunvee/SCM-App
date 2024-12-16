@@ -179,6 +179,7 @@ def inventory_list(request):
             emp_id = query_serializer.validated_data.get('emp_id')
             location = query_serializer.validated_data.get('location')
 
+            locationObj = get_object_or_404(Location, name = location)
             requesterObj = get_object_or_404(Member, emp_id = emp_id)
 
             if location == 'all':
@@ -194,7 +195,7 @@ def inventory_list(request):
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(e)
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": f"Something went wrong, {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
         
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
