@@ -235,24 +235,33 @@ def inventory_report(request):
 @permission_classes([IsAuthenticated])
 def submit_inventory_report(request):
     try:
+        compUpdate = []
         now = datetime.now(pytz.timezone('Asia/Bangkok'))
+        year_expired_date = now - timedelta(days = 2000)
 
         rs_status = request.data.get('status')
         missing_list = request.data.get('missing_list')
-        component_id = request.data.get('component_id')
+        location = request.data.get('location')
 
-        compObj = get_object_or_404(Component, id = component_id)
-        compObj.last_inventory_date = now
-        compObj.next_inventory_date = now + timedelta(days = 180)
-        compObj.save()
+        for item in missing_list:
 
+            component_obj = get_object_or_404(Component, id = item['id'])
+
+            component_obj.last_inventory_date = now
+            component_obj.next_inventory_date = now + timedelta(days= 180)
+            compUpdate.append(component_obj)
+
+        locationObj = get_object_or_404(Location, name = location)
+
+        Component.objects.bulk_update(compUpdate, ["last_inventory_date", "next_inventory_date"])
         inventObj = InventoryReport.objects.create(
-            component = compObj,
+            location = locationObj,
             missing_list = missing_list,
             status = rs_status
         )
 
         serializer = InventoryReportSerializer(instance = inventObj)
+        InventoryReport.objects.filter(inventory_date__lte = year_expired_date).delete() 
 
         return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
     except Exception as e:

@@ -208,13 +208,13 @@ admin.site.register(Request, RequestAdmin)
 
 
 class InventoryReportAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'component__name', 'inventory_date']
+    search_fields = ['id', 'location__name', 'inventory_date']
     list_filter = ['status']
 
     list_display = (
         'id',
         'status',
-        'component',
+        'location',
         'inventory_date'
                     )
     list_filter = ['status']

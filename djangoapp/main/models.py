@@ -266,11 +266,11 @@ class InventoryReport(models.Model):
     STATUS = (('Abnormal', 'Abnormal'), ('Normal', 'Normal'))
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    location = models.ForeignKey(Location, on_delete=models.CASCADE)
 
     status = models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])
     missing_list = models.TextField(blank = True, null=True)
     inventory_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.component.name}, {self.status}"
+        return f"{self.location.name}, {self.status}"

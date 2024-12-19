@@ -154,7 +154,7 @@ class ApprovedRouteSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InventoryReportSerializer(serializers.ModelSerializer):
-    component = ComponentInfoSerializer()
+    location = LocationSerializer()
     class Meta(object):
         model = InventoryReport
         fields = '__all__'
