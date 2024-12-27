@@ -91,6 +91,7 @@ class Department(models.Model):
 class Location(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length = 250)
+    last_inventory_date = models.DateTimeField(default=timezone.now)
     def __str__(self):
         return self.name
     
@@ -132,6 +133,7 @@ class Component(models.Model):
 
     last_inventory_date = models.DateTimeField(default=timezone.now)
     next_inventory_date = models.DateTimeField(default=timezone.now)
+    missing_list = models.TextField(blank = True, null=True) 
 
     equipment_type =  models.CharField(max_length = 250, blank=True)
 
@@ -268,6 +270,7 @@ class InventoryReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
 
+    staff = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True)
     status = models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])
     missing_list = models.TextField(blank = True, null=True)
     inventory_date = models.DateTimeField(auto_now_add=True)

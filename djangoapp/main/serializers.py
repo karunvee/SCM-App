@@ -14,7 +14,7 @@ class ComponentTypeSerializer(serializers.ModelSerializer):
 class LocationSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Location
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'last_inventory_date']
 
 class MachineTypeSerializer(serializers.ModelSerializer):
     class Meta(object):
@@ -55,7 +55,7 @@ class ComponentWithoutSerialsSerializer(serializers.ModelSerializer):
         model = Component
         fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier', 'equipment_type',
                   'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
-                  'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date',
+                  'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date', 'missing_list',
                   'consumable', 'image']
 
 class ComponentInfoSerializer(serializers.ModelSerializer):
@@ -154,6 +154,7 @@ class ApprovedRouteSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InventoryReportSerializer(serializers.ModelSerializer):
+    staff = MemberSerializer()
     location = LocationSerializer()
     class Meta(object):
         model = InventoryReport
@@ -211,4 +212,9 @@ class ApproveByMailQuerySerializer(serializers.Serializer):
 
 class EmployeeIdWithLocationQuerySerializer(serializers.Serializer):
     emp_id = serializers.CharField()
+    location = serializers.CharField()
+
+
+class ProAreaWithLocationQuerySerializer(serializers.Serializer):
+    production_name = serializers.CharField()
     location = serializers.CharField()

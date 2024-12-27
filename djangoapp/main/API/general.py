@@ -169,6 +169,7 @@ def mod_po(request, pn):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -179,10 +180,9 @@ def inventory_list(request):
             emp_id = query_serializer.validated_data.get('emp_id')
             location = query_serializer.validated_data.get('location')
 
-            locationObj = get_object_or_404(Location, name = location)
             requesterObj = get_object_or_404(Member, emp_id = emp_id)
 
-            if location == 'all':
+            if location.upper() == 'ALL':
                 compObj = Component.objects.filter(location__production_area = requesterObj.production_area).order_by('name')
             else:
                 compObj = Component.objects.filter(location__production_area = requesterObj.production_area, 
@@ -196,39 +196,45 @@ def inventory_list(request):
     except Exception as e:
         print(e)
         return Response({"detail": f"Something went wrong, {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-        
+    
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def inventory_report(request):
+def inventory_report_list(request, day_period):
     try:
-        query_serializer = EmployeeIdWithLocationQuerySerializer(data = request.query_params)
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+        period_date = now - timedelta(days = int(day_period))
+
+        query_serializer = ProAreaWithLocationQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
-            emp_id = query_serializer.validated_data.get('emp_id')
+            production_name = query_serializer.validated_data.get('production_name')
             location = query_serializer.validated_data.get('location')
 
-            requesterObj = get_object_or_404(Member, emp_id = emp_id)
 
-            if location == 'all':
-                invtObj = InventoryReport.objects.filter(component__location__production_area = requesterObj.production_area).order_by('-inventory_date')
-
-                compObj = Component.objects.filter(location__production_area = requesterObj.production_area).order_by('name')
+            if location.upper() == 'ALL':
+                inventoryObj = InventoryReport.objects.filter(
+                    location__production_area__prod_area_name = production_name,
+                    inventory_date__range = (period_date, now)
+                    ).order_by('-inventory_date')
             else:
-                invtObj = InventoryReport.objects.filter(component__location__production_area = requesterObj.production_area, 
-                                                         component__location__name = location).order_by('-inventory_date')
+                inventoryObj = InventoryReport.objects.filter(
+                    location__production_area__prod_area_name = production_name, 
+                    location__name = location,
+                    inventory_date__range = (period_date, now)
+                    ).order_by('-inventory_date')
 
-                compObj = Component.objects.filter(location__production_area = requesterObj.production_area, 
-                                                   location__name = location).order_by('name')
+            serializer_inv = InventoryReportSerializer(instance = inventoryObj, many=True)
 
-            serializer_report = InventoryReportSerializer(instance = invtObj, many=True)
-            serializer_comp = ComponentSerializer(instance = compObj, many=True)
+            for inv in serializer_inv.data:
+                inv["location_name"] = inv["location"]["name"]
 
-            return Response({"detail": "success", "report_list" : serializer_report.data, "component_list": serializer_comp.data }, status=status.HTTP_200_OK)
+            return Response({"detail": "success", "inventory_report_list" : serializer_inv.data }, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(e)
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": f"Something went wrong, {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -239,6 +245,7 @@ def submit_inventory_report(request):
         now = datetime.now(pytz.timezone('Asia/Bangkok'))
         year_expired_date = now - timedelta(days = 2000)
 
+        emp_id = request.data.get('emp_id')
         rs_status = request.data.get('status')
         missing_list = request.data.get('missing_list')
         location = request.data.get('location')
@@ -246,15 +253,28 @@ def submit_inventory_report(request):
         for item in missing_list:
 
             component_obj = get_object_or_404(Component, id = item['id'])
-
+            
             component_obj.last_inventory_date = now
             component_obj.next_inventory_date = now + timedelta(days= 180)
+
+            if component_obj.unique_component:
+                array = str([component_obj.last_sn] * item['missingQuantity'])
+                component_obj.missing_list = array
+            else:   
+                component_obj.missing_list = item['missingList']
+
             compUpdate.append(component_obj)
 
-        locationObj = get_object_or_404(Location, name = location)
+        staff = get_object_or_404(Member, emp_id = emp_id)
 
-        Component.objects.bulk_update(compUpdate, ["last_inventory_date", "next_inventory_date"])
+
+        locationObj = get_object_or_404(Location, name = location)
+        locationObj.last_inventory_date = now
+        locationObj.save()
+
+        Component.objects.bulk_update(compUpdate, ["last_inventory_date", "next_inventory_date", "missing_list"])
         inventObj = InventoryReport.objects.create(
+            staff = staff,
             location = locationObj,
             missing_list = missing_list,
             status = rs_status

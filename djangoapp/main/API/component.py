@@ -7,9 +7,9 @@ from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-import itertools
-import re
-from django.db.models import Max
+
+import pytz
+from datetime import datetime, timedelta
 
 from ..models import *
 from ..serializers import *
@@ -29,6 +29,25 @@ def component_list(request):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def location_inventory(request, day_period):
+    now = datetime.now(pytz.timezone('Asia/Bangkok'))
+    period_date = now - timedelta(days = int(day_period))
+            # InventoryReport.objects.filter(inventory_date__lte = year_expired_date).delete() 
+    try:
+        query_serializer = ComponentProdNameQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            production_name = query_serializer.validated_data.get('production_name')
+            locations = Location.objects.filter(production_area__prod_area_name = production_name, last_inventory_date__lte = period_date).order_by('name')
+            serializers = LocationSerializer(instance=locations, many=True)
+
+            return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])

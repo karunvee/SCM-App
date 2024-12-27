@@ -65,8 +65,10 @@ urlpatterns = [
 
     path('po_relative_component/<str:po_number>/', po_relative_component, name='po_relative_component'),
     path('inventory_list/', inventory_list, name='inventory_list'),
-    path('inventory_report/', inventory_report, name='inventory_report'),
+    path('inventory_report_list/<str:day_period>/days/', inventory_report_list, name='inventory_report_list'),
     path('inventory_check/submit/report/', submit_inventory_report, name='submit_inventory_report'),
+
+    path('location_inventory/<str:day_period>/days/', location_inventory, name='location_inventory'),
 
     path('proxy/image/pqm/<str:equip_type>/', proxy_image, name='proxy_image'),
 ]
