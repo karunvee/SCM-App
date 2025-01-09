@@ -53,7 +53,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
     emp_id = models.CharField(unique=True, max_length = 10)
     username = models.CharField(unique=True,max_length = 100)
     name = models.CharField(max_length = 200)
-    department = models.CharField(max_length = 250)
+    department = models.CharField(max_length = 250, blank=True, null=True)
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     cost_center = models.ForeignKey(CostCenter, on_delete=models.CASCADE, blank=True, null=True)
 

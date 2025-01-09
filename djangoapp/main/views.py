@@ -38,13 +38,13 @@ def login_user(request):
                 print('hit create new user')
 
                 if connect.bind():
-
+                    print('bind')
                     user_account = username
                     base_dn = 'DC=delta,DC=corp'  # Update this to your AD's base DN
                     search_filter = f'(sAMAccountName={user_account})'
                     attributes = ['sAMAccountName', 'displayName', 'mail', 'department', 'employeeID']
                     connect.search(search_base=base_dn, search_filter=search_filter, attributes=attributes)
-
+                    print('connect')
                     if connect.entries:
                         entry = connect.entries[0]
 
@@ -53,7 +53,8 @@ def login_user(request):
                         ad_email = entry.mail.value
                         ad_department = entry.department.value
                         ad_employeeId = entry.employeeID.value
-                        print('Hit3')
+                        
+                        print(f'Info: {ad_employeeId} {ad_displayName} {ad_email} {ad_department}')
 
                         new_member = Member.objects.create(
                             emp_id = ad_employeeId,
@@ -69,13 +70,15 @@ def login_user(request):
                             )
 
                         token, create = Token.objects.get_or_create(user=new_member)
+                        
                         serializer = MemberSerializer(new_member)
                         return Response({"detail": "success", "token": token.key, "data": serializer.data}, status=status.HTTP_201_CREATED)
                 else:
                     return Response({"detail": "Failure, This user not found in Active Directory"}, status=status.HTTP_404_NOT_FOUND)
                 
             except Exception as e:
-                return Response({"detail": "Credentials are invalid. please check your username or password."}, status=status.HTTP_404_NOT_FOUND)
+                print(e)
+                return Response({"detail": "Credentials are invalid. please check your username or password."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         else:
             user = get_object_or_404(Member, username= username)
