@@ -125,8 +125,7 @@ def add_component(request):
         image = request.data.get('image')
         name = request.data.get('name')
         model = request.data.get('model')
-        # po_number = request.data['po_number']
-        # serial_numbers = request.data.get('serial_numbers').split(',')
+
         description = request.data.get('description')
         self_pickup = request.data.get('self_pickup')
         unique_component = request.data.get('unique_component')
@@ -139,11 +138,12 @@ def add_component(request):
             serializer_comp_duplicate = ComponentSerializer(instance = comObj)
             return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck.", "data": serializer_comp_duplicate.data}, status=status.HTTP_409_CONFLICT)
 
-        machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'))
+        production_area = get_object_or_404(ProductionArea, prod_area_name=request.data.get('production_name'))
+
+        machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'), production_area = production_area)
         component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
         department = get_object_or_404(Department, name=request.data.get('department'))
-        location = get_object_or_404(Location, name=request.data.get('location'))
-        production_area = get_object_or_404(ProductionArea, prod_area_name=request.data.get('production_name'))
+        location = get_object_or_404(Location, name=request.data.get('location'), production_area = production_area)
 
         quantity = request.data.get('quantity')
         quantity_warning = request.data.get('quantity_warning')
