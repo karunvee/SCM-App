@@ -218,3 +218,6 @@ class EmployeeIdWithLocationQuerySerializer(serializers.Serializer):
 class ProAreaWithLocationQuerySerializer(serializers.Serializer):
     production_name = serializers.CharField()
     location = serializers.CharField()
+
+class LocationQuerySerializer(serializers.Serializer):
+    location = serializers.CharField()

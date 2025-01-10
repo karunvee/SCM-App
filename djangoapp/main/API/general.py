@@ -307,3 +307,52 @@ def deleteAll():
         HistoryTrading.objects.all().delete()
     except Exception as e:
         return Response({str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def inventory_reset(request):
+    try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+
+        query_serializer = LocationQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            location = query_serializer.validated_data.get('location')
+            if location.upper() == 'ALL':
+
+                Component.objects.all().update(
+                    last_inventory_date = now,
+                    next_inventory_date = now + timedelta(days= 180),
+                    missing_list = None
+                )
+                Location.objects.all().update(
+                    last_inventory_date = now
+                )
+                InventoryReport.objects.all().delete()
+
+
+            else:
+                locationObj = get_object_or_404(Location, name = location)
+
+                invObj = InventoryReport.objects.filter(location = locationObj)
+                invObj.delete()
+
+                Component.objects.filter(location = locationObj).update(
+                    last_inventory_date = now,
+                    next_inventory_date = now + timedelta(days= 180),
+                    missing_list = None
+                )
+                Location.objects.filter(name = location).update(
+                    last_inventory_date = now
+                )
+            return Response({"detail": "success"}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    

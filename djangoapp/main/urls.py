@@ -67,6 +67,8 @@ urlpatterns = [
     path('inventory_list/', inventory_list, name='inventory_list'),
     path('inventory_report_list/<str:day_period>/days/', inventory_report_list, name='inventory_report_list'),
     path('inventory_check/submit/report/', submit_inventory_report, name='submit_inventory_report'),
+    
+    path('inventory_reset/', inventory_reset, name='inventory_reset'),
 
     path('location_inventory/<str:day_period>/days/', location_inventory, name='location_inventory'),
 
