@@ -118,6 +118,12 @@ class ProductionAreaSerializer(serializers.ModelSerializer):
         model = ProductionArea
         fields = '__all__'
 
+class LineSerializer(serializers.ModelSerializer):
+    production_area = ProductionAreaSerializer()
+    class Meta(object):
+        model = Line
+        fields = '__all__'
+
 class MemberSerializer(serializers.ModelSerializer):
     production_area = ProductionAreaSerializer()
     class Meta(object):

@@ -73,4 +73,11 @@ urlpatterns = [
     path('location_inventory/<str:day_period>/days/', location_inventory, name='location_inventory'),
 
     path('proxy/image/pqm/<str:equip_type>/', proxy_image, name='proxy_image'),
+
+    path('lines/list/', get_lines, name='get_lines'),
+    path('line/create/', create_line, name='create_line'),
+    path('lines/create/bulk/', create_group_lines, name='create_group_lines'),
+    path('line/delete/<str:line_name>/', delete_line, name='delete_line'),
+
+
 ]

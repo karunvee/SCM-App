@@ -19,6 +19,7 @@ from .API.account import *
 from .API.general import *
 from .API.cart_request import *
 from .API.approved_route import *
+from .API.line_section import *
 
 
 @api_view(['POST'])
@@ -127,28 +128,36 @@ def logout_user(request):
 
 @api_view(['GET'])
 def basic_info(request, pda):
-    prodArea = ProductionArea.objects.get(prod_area_name = pda)
-    ct_serializers = ComponentTypeSerializer(instance=ComponentType.objects.all(), many=True)
-    d_serializers = DepartmentSerializer(instance=Department.objects.all(), many=True)
+    try:
+        prodArea = ProductionArea.objects.get(prod_area_name = pda)
+        ct_serializers = ComponentTypeSerializer(instance=ComponentType.objects.all(), many=True)
+        d_serializers = DepartmentSerializer(instance=Department.objects.all(), many=True)
 
-    locations = Location.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('name')
-    l_serializers = LocationSerializer(
-        instance=locations, 
-        many=True
-        )
-    machineTypes = MachineType.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('name')
-    m_serializers = MachineTypeSerializer(
-        instance=machineTypes, 
-        many=True
-        )
-    context = {
-        'component_type_list': ct_serializers.data,
-        'department_list': d_serializers.data,
-        'location_list': l_serializers.data,
-        'machine_type_list': m_serializers.data,
-    }
-    return Response(context)
-
+        locations = Location.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('name')
+        l_serializers = LocationSerializer(
+            instance=locations, 
+            many=True
+            )
+        machineTypes = MachineType.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('name')
+        m_serializers = MachineTypeSerializer(
+            instance=machineTypes, 
+            many=True
+            )
+        lines = Line.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('name')
+        ln_serializers = LineSerializer(
+            instance=lines, 
+            many=True
+            )
+        context = {
+            'component_type_list': ct_serializers.data,
+            'department_list': d_serializers.data,
+            'location_list': l_serializers.data,
+            'machine_type_list': m_serializers.data,
+            'line_list': ln_serializers.data,
+        }
+        return Response(context)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST', 'PUT'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])

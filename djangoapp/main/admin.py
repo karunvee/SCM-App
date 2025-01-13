@@ -1,6 +1,46 @@
 from django.contrib import admin
 from .models import *
 # Register your models here.
+
+class CostCenterAdmin(admin.ModelAdmin):
+    search_fields = ['name', 'cost_center_number']
+    list_display = (
+        'cost_center_number',
+        'name',
+        'id',
+                    )
+admin.site.register(CostCenter, CostCenterAdmin)
+
+class ProductionAreaAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'prod_area_name']
+    list_display = (
+        'id',
+        'prod_area_name',
+        'description',
+        'detail',
+                    )
+admin.site.register(ProductionArea, ProductionAreaAdmin)
+
+class LineAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'name', 'production_area__prod_area_name']
+    list_display = (
+        'name',
+        'id',
+        'production_area',
+        'added_date',
+                    )
+admin.site.register(Line, LineAdmin)
+
+class LineSafetyStockRelationAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'line__name', 'component__name', 'component__model']
+    list_display = (
+        'id',
+        'component',
+        'safety_number',
+        'line',
+                    )
+admin.site.register(LineSafetyStockRelation, LineSafetyStockRelationAdmin)
+
 class DepartmentAdmin(admin.ModelAdmin):
     search_fields = ['name']
     list_display = (
@@ -58,25 +98,6 @@ admin.site.register(SerialNumber, SerialNumberAdmin)
 class SerialNumberInline(admin.TabularInline):  # Use 'StackedInline' for a different layout
     model = SerialNumber
     extra = 1 
-
-class CostCenterAdmin(admin.ModelAdmin):
-    search_fields = ['name', 'cost_center_number']
-    list_display = (
-        'cost_center_number',
-        'name',
-        'id',
-                    )
-admin.site.register(CostCenter, CostCenterAdmin)
-
-class ProductionAreaAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'prod_area_name']
-    list_display = (
-        'id',
-        'prod_area_name',
-        'description',
-        'detail',
-                    )
-admin.site.register(ProductionArea, ProductionAreaAdmin)
 
 class ComponentAdmin(admin.ModelAdmin):
     inlines = [SerialNumberInline]

@@ -34,13 +34,6 @@ class CustomUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-class CostCenter(models.Model):
-    name = models.CharField(max_length = 255, unique=True)
-    cost_center_number = models.CharField(max_length = 255, unique=True)
-
-    def __str__(self):
-        return f'{self.name}, {self.cost_center_number}'
-
 class ProductionArea(models.Model):
     prod_area_name = models.CharField(max_length = 255, unique=True)
     description = models.CharField(max_length = 255)
@@ -49,6 +42,23 @@ class ProductionArea(models.Model):
     def __str__(self):
         return self.prod_area_name
 
+class Line(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(unique=True, max_length = 10)
+    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE)
+    added_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class CostCenter(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length = 255, unique=True)
+    cost_center_number = models.CharField(max_length = 255, unique=True)
+    line = models.ForeignKey(Line, on_delete=models.CASCADE, blank=True, null=True)
+    def __str__(self):
+        return f'{self.name}, {self.cost_center_number}'
+    
 class Member(AbstractBaseUser, PermissionsMixin):
     emp_id = models.CharField(unique=True, max_length = 10)
     username = models.CharField(unique=True,max_length = 100)
@@ -137,6 +147,11 @@ class Component(models.Model):
 
     equipment_type =  models.CharField(max_length = 250, blank=True)
 
+    modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_c_member')
+    added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_c_member')
+
+    safety_stock = models.ManyToManyField(Line, through='LineSafetyStockRelation')
+
     @property
     def image_url(self):
         if self.image:
@@ -146,6 +161,20 @@ class Component(models.Model):
         
     def __str__(self):
         return f"{self.name}, {self.model}"
+
+class LineSafetyStockRelation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    line = models.ForeignKey(Line, on_delete=models.CASCADE)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    safety_number = models.PositiveIntegerField(default=1)
+    modify_date = models.DateTimeField(default=timezone.now)
+    added_date = models.DateTimeField(auto_now_add=True)
+
+    modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_ls_member')
+    added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_ls_member')
+
+    def __str__(self):
+        return f"{self.line.name}, {self.component.name}"
 
 class PO(models.Model):
     po_number = models.CharField(max_length = 250, blank = True)
@@ -180,6 +209,7 @@ class Request(models.Model):
     scrap_status = models.BooleanField(default=False)
     scrap_list = models.TextField(blank = True, null=True)
 
+    line = models.ForeignKey(Line, on_delete=models.CASCADE, blank=True, null=True)
     purpose_type = models.TextField(max_length = 255, choices=PURPOSE_TYPE, default=PURPOSE_TYPE[0][0])
     purpose_detail = models.TextField()
     prepare_by = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='prepare_by', blank=True, null=True)
@@ -249,6 +279,8 @@ class HistoryTrading(models.Model):
     gr_qty = models.IntegerField(default=0)
     gi_qty = models.IntegerField(default=0)
     scrap_qty = models.IntegerField(default=0)
+
+    line = models.ForeignKey(Line, on_delete=models.CASCADE, blank=True, null=True)
     purpose_detail = models.TextField()
     purpose_type = models.CharField(max_length = 100, blank=True, null=True)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
