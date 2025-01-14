@@ -43,13 +43,13 @@ def get_lines(request):
 def create_line(request):
     try:
         if request.method == 'POST':
-            name = request.data.get('name')
+            line_name = request.data.get('line_name')
             emp_id = request.data.get('emp_id')
 
             memberObj = get_object_or_404(Member, emp_id = emp_id)
 
             c = Line.objects.create(
-                name = name,
+                line_name = line_name,
                 production_area = memberObj.production_area
             )
             serializer = LineSerializer(instance = c)
@@ -57,8 +57,8 @@ def create_line(request):
         
         elif request.method == 'PUT':
             id = request.data.get('id')
-            name = request.data.get('name')
-            Line.objects.filter(id = id).update(name = name)
+            line_name = request.data.get('line_name')
+            Line.objects.filter(id = id).update(line_name = line_name)
 
             return Response({ "detail": "success"}, status=status.HTTP_201_CREATED)
     except Exception as e:
@@ -80,7 +80,7 @@ def create_group_lines(request):
         for line in line_list:
             createLines.append(
                 Line(
-                    name = line,
+                    line_name = line,
                     production_area = memberObj.production_area
                 )
             )
@@ -97,7 +97,7 @@ def create_group_lines(request):
 @permission_classes([IsAuthenticated])
 def delete_line(request, line_name):
     try:
-        lineObj = get_object_or_404(Line, name = line_name)
+        lineObj = get_object_or_404(Line, line_name = line_name)
         lineObj.delete()
         
         return Response({ "detail": "success"}, status=status.HTTP_200_OK)

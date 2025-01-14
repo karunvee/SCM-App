@@ -1,6 +1,11 @@
 from rest_framework import serializers
 from .models import *
 
+class ProductionAreaSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = ProductionArea
+        fields = '__all__'
+        
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Department
@@ -26,11 +31,24 @@ class PoSerializer(serializers.ModelSerializer):
         model = PO
         fields = '__all__'
 
+class LineSerializer(serializers.ModelSerializer):
+    production_area = ProductionAreaSerializer()
+    class Meta(object):
+        model = Line
+        fields = '__all__'
+
 class SerialNumberSerializer(serializers.ModelSerializer):
     component = serializers.StringRelatedField()
     po = serializers.StringRelatedField()
     class Meta(object):
         model = SerialNumber
+        fields = '__all__'
+
+class LineSafetyStockRelationSerializer(serializers.ModelSerializer):
+    line = serializers.StringRelatedField()
+    component = serializers.StringRelatedField()
+    class Meta(object):
+        model = LineSafetyStockRelation
         fields = '__all__'
 
 class ComponentSerializer(serializers.ModelSerializer):
@@ -111,17 +129,6 @@ class SerialNumberWithComponentSerializer(serializers.ModelSerializer):
     component = ComponentInfoSerializer()
     class Meta(object):
         model = SerialNumber
-        fields = '__all__'
-
-class ProductionAreaSerializer(serializers.ModelSerializer):
-    class Meta(object):
-        model = ProductionArea
-        fields = '__all__'
-
-class LineSerializer(serializers.ModelSerializer):
-    production_area = ProductionAreaSerializer()
-    class Meta(object):
-        model = Line
         fields = '__all__'
 
 class MemberSerializer(serializers.ModelSerializer):

@@ -67,9 +67,23 @@ def component_filter(request):
             if machine_type_content != 'All':
                 component_obj = component_obj.filter( machine_type__name = machine_type_content).order_by('name')
 
-            serializers = ComponentSerializer(instance=component_obj, many=True)
+            comp_serializers = ComponentSerializer(instance=component_obj, many=True)
 
-            return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
+            for comp in comp_serializers.data:
+                ssRel = LineSafetyStockRelation.objects.filter(component__id = comp['id'])
+                comp['line_safety_stock'] = []
+                for ssRelIndex in ssRel:
+                    comp['line_safety_stock'].append({
+                        'id': ssRelIndex.id,
+                        'line_name': ssRelIndex.line.line_name,
+                        'safety_number': ssRelIndex.safety_number,
+                        'modify_date': ssRelIndex.modify_date,
+                        'added_date': ssRelIndex.added_date,
+                        'modify_member': ssRelIndex.modify_member,
+                        'added_member': ssRelIndex.added_member,
+                    })
+
+            return Response({"detail": "success", "data": comp_serializers.data}, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
@@ -122,6 +136,7 @@ def info_component_list(request):
 @permission_classes([IsAuthenticated])
 def add_component(request):
     try:
+        emp_id = request.data.get('emp_id')
         image = request.data.get('image')
         name = request.data.get('name')
         model = request.data.get('model')
@@ -144,6 +159,7 @@ def add_component(request):
         component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
         department = get_object_or_404(Department, name=request.data.get('department'))
         location = get_object_or_404(Location, name=request.data.get('location'), production_area = production_area)
+        member = get_object_or_404(Member, emp_id = emp_id)
 
         quantity = request.data.get('quantity')
         quantity_warning = request.data.get('quantity_warning')
@@ -167,7 +183,9 @@ def add_component(request):
             quantity=quantity,
             quantity_warning=quantity_warning,
             quantity_alert=quantity_alert,
-            production_area=production_area
+            production_area=production_area,
+            added_member=member,
+            modify_member=member,
             )
 
             serializer = ComponentSerializer(component_obj)
@@ -186,6 +204,7 @@ def update_component(request, pk):
     if component_obj.exists():
         print(request.data)
         component_obj = component_obj.first()
+        emp_id = request.data.get('emp_id')
         image = request.data.get('image')
         name = request.data.get('name')
         model = request.data.get('model')
@@ -211,7 +230,7 @@ def update_component(request, pk):
         quantity_warning = request.data.get('quantity_warning')
         quantity_alert = request.data.get('quantity_alert')
 
-
+        member = get_object_or_404(Member, emp_id = emp_id)
         if image:
             component_obj.image = image
             component_obj.save()
@@ -236,6 +255,7 @@ def update_component(request, pk):
         component_obj.quantity = qty
         component_obj.quantity_warning = quantity_warning
         component_obj.quantity_alert = quantity_alert
+        component_obj.modify_member = member
 
 
         component_obj.save()

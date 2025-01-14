@@ -143,7 +143,7 @@ def basic_info(request, pda):
             instance=machineTypes, 
             many=True
             )
-        lines = Line.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('name')
+        lines = Line.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('line_name')
         ln_serializers = LineSerializer(
             instance=lines, 
             many=True

@@ -22,9 +22,9 @@ class ProductionAreaAdmin(admin.ModelAdmin):
 admin.site.register(ProductionArea, ProductionAreaAdmin)
 
 class LineAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'name', 'production_area__prod_area_name']
+    search_fields = ['id', 'line_name', 'production_area__prod_area_name']
     list_display = (
-        'name',
+        'line_name',
         'id',
         'production_area',
         'added_date',
@@ -32,7 +32,7 @@ class LineAdmin(admin.ModelAdmin):
 admin.site.register(Line, LineAdmin)
 
 class LineSafetyStockRelationAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'line__name', 'component__name', 'component__model']
+    search_fields = ['id', 'line__line_name', 'component__name', 'component__model']
     list_display = (
         'id',
         'component',
@@ -99,8 +99,15 @@ class SerialNumberInline(admin.TabularInline):  # Use 'StackedInline' for a diff
     model = SerialNumber
     extra = 1 
 
+
+class LineSafetyStockRelationInline(admin.TabularInline):
+    model = LineSafetyStockRelation
+    extra = 1  # Number of empty forms to display
+    fields = ('line', 'safety_number', 'modify_date', 'added_date')
+    readonly_fields = ('modify_date', 'added_date')  # Make these fields read-only
+
 class ComponentAdmin(admin.ModelAdmin):
-    inlines = [SerialNumberInline]
+    inlines = [LineSafetyStockRelationInline, SerialNumberInline]
     search_fields = ['name', 'model', 'supplier']
     list_display = (
         'name',

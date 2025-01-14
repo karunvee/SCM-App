@@ -18,7 +18,7 @@ from ..serializers import *
 @permission_classes([IsAuthenticated])
 def get_account(request):
     try:
-        members = Member.objects.all().exclude(pk = 1)
+        members = Member.objects.all().exclude(pk = 1).order_by('-date_joined')
         member_serializer = MemberSerializer(instance=members, many=True)
 
         return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
