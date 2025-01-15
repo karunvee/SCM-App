@@ -34,13 +34,14 @@ def component_cart(request):
 def checkout_cart(request):
     requestReceipt = None
     try:
+        lines = request.data.get('lines')
         item_list = request.data.get('item_list')
         requester_emp_id = request.data.get('requester_emp_id')
         requester_name_center = request.data.get('requester_name_center')
         requester_emp_center = request.data.get('requester_emp_center')
         purpose_detail = request.data.get('purpose_detail')
         purpose_type = request.data.get('purpose_type')
-       
+
         rqt = get_object_or_404(Member, emp_id = requester_emp_id)
         prodArea = get_object_or_404(ApprovedRoute, production_area = rqt.production_area)
 
@@ -64,6 +65,8 @@ def checkout_cart(request):
             purpose_type = purpose_type,
             scrap_status = (purpose_type != 'Exchange')
         )
+        linesObj = Line.objects.filter(line_name__in=lines)
+        requestReceipt.lines.add(*linesObj)
 
         for item in item_list:
            
@@ -77,8 +80,10 @@ def checkout_cart(request):
 
         return Response({"detail": "success", "request_id": requestReceipt.id}, status=status.HTTP_200_OK)
     except Exception as e:
+        print(e)
         requestReceipt.delete()
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": f"Failure, data as provided is incorrect. {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(['GET'])

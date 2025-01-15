@@ -209,7 +209,8 @@ class Request(models.Model):
     scrap_status = models.BooleanField(default=False)
     scrap_list = models.TextField(blank = True, null=True)
 
-    line = models.ForeignKey(Line, on_delete=models.CASCADE, blank=True, null=True)
+    lines = models.ManyToManyField(Line, related_name='lines_request')
+
     purpose_type = models.TextField(max_length = 255, choices=PURPOSE_TYPE, default=PURPOSE_TYPE[0][0])
     purpose_detail = models.TextField()
     prepare_by = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='prepare_by', blank=True, null=True)
@@ -280,7 +281,8 @@ class HistoryTrading(models.Model):
     gi_qty = models.IntegerField(default=0)
     scrap_qty = models.IntegerField(default=0)
 
-    line = models.ForeignKey(Line, on_delete=models.CASCADE, blank=True, null=True)
+    lines = models.ManyToManyField(Line, related_name='lines_history')
+
     purpose_detail = models.TextField()
     purpose_type = models.CharField(max_length = 100, blank=True, null=True)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)

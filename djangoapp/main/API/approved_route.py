@@ -475,7 +475,18 @@ def pick_up(request):
         if not request_obj.update_status_to_next():
             return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
         
-        HistoryTrading.objects.bulk_create(history_items)
+        created_history  = HistoryTrading.objects.bulk_create(history_items)
+        
+        # Handle many-to-many relationships for lines
+        relationship_objects = []
+        for history in created_history:
+            for line in request_obj.lines.all():
+                relationship_objects.append(
+                    HistoryTrading.lines.through(historytrading_id=history.id, line_id=line.id)
+                )
+        HistoryTrading.lines.through.objects.bulk_create(relationship_objects)
+
+
         request_obj.delete()
 
         HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
@@ -552,7 +563,17 @@ def set_self_pick_up(request):
                 serial_numbers_obj.delete()
 
         
-        HistoryTrading.objects.bulk_create(history_items)
+        created_history  = HistoryTrading.objects.bulk_create(history_items)
+        
+        # Handle many-to-many relationships for lines
+        relationship_objects = []
+        for history in created_history:
+            for line in request_obj.lines.all():
+                relationship_objects.append(
+                    HistoryTrading.lines.through(historytrading_id=history.id, line_id=line.id)
+                )
+        HistoryTrading.lines.through.objects.bulk_create(relationship_objects)
+
         HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
 
         poOnExpired = PO.objects.filter(issue_date__lte = year_expired_date)

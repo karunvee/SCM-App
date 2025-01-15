@@ -28,7 +28,7 @@ def get_lines(request):
             emp_id = query_serializer.validated_data.get('emp_id')
             
             memberObj = get_object_or_404(Member, emp_id = emp_id)
-            lineObj = Line.objects.filter(production_area = memberObj.production_area)
+            lineObj = Line.objects.filter(production_area = memberObj.production_area).order_by('line_name')
             serializes = LineSerializer(instance = lineObj, many=True)
             return Response({"detail": "success", "lines" : serializes.data }, status=status.HTTP_200_OK)
         else:
@@ -43,7 +43,7 @@ def get_lines(request):
 def create_line(request):
     try:
         if request.method == 'POST':
-            line_name = request.data.get('line_name')
+            line_name = request.data.get('name')
             emp_id = request.data.get('emp_id')
 
             memberObj = get_object_or_404(Member, emp_id = emp_id)
@@ -57,7 +57,7 @@ def create_line(request):
         
         elif request.method == 'PUT':
             id = request.data.get('id')
-            line_name = request.data.get('line_name')
+            line_name = request.data.get('name')
             Line.objects.filter(id = id).update(line_name = line_name)
 
             return Response({ "detail": "success"}, status=status.HTTP_201_CREATED)

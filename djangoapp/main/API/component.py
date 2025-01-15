@@ -136,6 +136,8 @@ def info_component_list(request):
 @permission_classes([IsAuthenticated])
 def add_component(request):
     try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+
         emp_id = request.data.get('emp_id')
         image = request.data.get('image')
         name = request.data.get('name')
@@ -148,8 +150,7 @@ def add_component(request):
         price = request.data.get('price')
         supplier = request.data.get('supplier')
         line_safety_stock = request.data.get('line_safety_stock')
-        for line in line_safety_stock:
-            print(line['id'])
+
 
         comObj = Component.objects.filter(model__iexact = model)
         if comObj.exists():
@@ -190,7 +191,27 @@ def add_component(request):
             added_member=member,
             modify_member=member,
             )
+            
+            lineSafetyStockJson = json.loads(line_safety_stock)
+            currentLineSafetyStockId = []
 
+            newLineSafetyStock = []
+            for line in lineSafetyStockJson:
+
+                newLineSafetyStock.append(
+                    LineSafetyStockRelation(
+                        line = get_object_or_404(Line, line_name = line['line_name']),
+                        component = component_obj,
+                        safety_number = line['safety_number'],
+                        modify_date = now,
+                        modify_member = member,
+                        added_member = member,
+                    )
+                )
+
+            LineSafetyStockRelation.objects.exclude(id__in = currentLineSafetyStockId).delete()
+            LineSafetyStockRelation.objects.bulk_create(newLineSafetyStock)
+            
             serializer = ComponentSerializer(component_obj)
             return Response({"detail": f"Successfully added {name}.", "data": serializer.data}, status=status.HTTP_201_CREATED)
         else:
@@ -227,10 +248,13 @@ def update_component(request, pk):
             serializer_comp_duplicate = ComponentWithoutSerialsSerializer(instance = comObj.get())
             return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck.", "data": serializer_comp_duplicate.data}, status=status.HTTP_409_CONFLICT)
 
-        machine_type, ct_created = MachineType.objects.get_or_create(name=request.data.get('machine_type'), defaults={})
-        component_type, ct_created = ComponentType.objects.get_or_create(name=request.data.get('component_type'), defaults={})
-        department, d_created = Department.objects.get_or_create(name=request.data.get('department'), defaults={})
-        location, l_created = Location.objects.get_or_create(name=request.data.get('location'), defaults={})
+        memberObj = get_object_or_404(Member, emp_id = emp_id)
+
+        machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'), production_area = memberObj.production_area)
+        component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
+        department = get_object_or_404(Department, name=request.data.get('department'))
+        location = get_object_or_404(Location, name=request.data.get('location'), production_area = memberObj.production_area)
+
         quantity = request.data.get('quantity')
         quantity_warning = request.data.get('quantity_warning')
         quantity_alert = request.data.get('quantity_alert')
@@ -263,7 +287,6 @@ def update_component(request, pk):
                 LineSsObject.modify_member = member
                 updateLineSafetyStock.append(LineSsObject)
 
-        print(newLineSafetyStock)
         LineSafetyStockRelation.objects.bulk_update(updateLineSafetyStock, ['safety_number', 'modify_date', 'modify_member'])
         LineSafetyStockRelation.objects.exclude(id__in = currentLineSafetyStockId).delete()
         LineSafetyStockRelation.objects.bulk_create(newLineSafetyStock)
