@@ -47,9 +47,9 @@ class Line(models.Model):
     line_name = models.CharField(unique=True, max_length = 10)
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE)
     added_date = models.DateTimeField(auto_now_add=True)
-
     def __str__(self):
-        return self.name
+
+        return self.line_name
 
 class CostCenter(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -174,7 +174,7 @@ class LineSafetyStockRelation(models.Model):
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_ls_member')
 
     def __str__(self):
-        return f"{self.line.name}, {self.component.name}, {self.safety_number}"
+        return f"{self.line.line_name}, {self.component.name}, {self.safety_number}"
 
 class PO(models.Model):
     po_number = models.CharField(max_length = 250, blank = True)

@@ -79,8 +79,8 @@ def component_filter(request):
                         'safety_number': ssRelIndex.safety_number,
                         'modify_date': ssRelIndex.modify_date,
                         'added_date': ssRelIndex.added_date,
-                        'modify_member': ssRelIndex.modify_member,
-                        'added_member': ssRelIndex.added_member,
+                        'modify_member': f"{ssRelIndex.modify_member.emp_id}, {ssRelIndex.modify_member.name}",
+                        'added_member': f"{ssRelIndex.added_member.emp_id}, {ssRelIndex.added_member.name}",
                     })
 
             return Response({"detail": "success", "data": comp_serializers.data}, status=status.HTTP_200_OK)
@@ -147,6 +147,9 @@ def add_component(request):
         equipment_type = request.data.get('equipment_type')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
+        line_safety_stock = request.data.get('line_safety_stock')
+        for line in line_safety_stock:
+            print(line['id'])
 
         comObj = Component.objects.filter(model__iexact = model)
         if comObj.exists():
@@ -202,7 +205,8 @@ def add_component(request):
 def update_component(request, pk):
     component_obj = Component.objects.filter(pk = pk)
     if component_obj.exists():
-        print(request.data)
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+        # print(request.data)
         component_obj = component_obj.first()
         emp_id = request.data.get('emp_id')
         image = request.data.get('image')
@@ -216,6 +220,7 @@ def update_component(request, pk):
         equipment_type = request.data.get('equipment_type')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
+        line_safety_stock = request.data.get('line_safety_stock')
 
         comObj = Component.objects.filter(model__iexact = model).exclude(pk = pk)
         if comObj.exists():
@@ -231,6 +236,39 @@ def update_component(request, pk):
         quantity_alert = request.data.get('quantity_alert')
 
         member = get_object_or_404(Member, emp_id = emp_id)
+
+
+        lineSafetyStockJson = json.loads(line_safety_stock)
+        currentLineSafetyStockId = []
+        updateLineSafetyStock = []
+        newLineSafetyStock = []
+        for line in lineSafetyStockJson:
+
+            if line['id'] == '':
+                newLineSafetyStock.append(
+                    LineSafetyStockRelation(
+                        line = get_object_or_404(Line, line_name = line['line_name']),
+                        component = component_obj,
+                        safety_number = line['safety_number'],
+                        modify_date = now,
+                        modify_member = member,
+                        added_member = member,
+                    )
+                )
+            else:
+                currentLineSafetyStockId.append(line['id'])
+                LineSsObject = get_object_or_404(LineSafetyStockRelation, id = line['id'])
+                LineSsObject.safety_number = line['safety_number']
+                LineSsObject.modify_date = now
+                LineSsObject.modify_member = member
+                updateLineSafetyStock.append(LineSsObject)
+
+        print(newLineSafetyStock)
+        LineSafetyStockRelation.objects.bulk_update(updateLineSafetyStock, ['safety_number', 'modify_date', 'modify_member'])
+        LineSafetyStockRelation.objects.exclude(id__in = currentLineSafetyStockId).delete()
+        LineSafetyStockRelation.objects.bulk_create(newLineSafetyStock)
+
+
         if image:
             component_obj.image = image
             component_obj.save()
