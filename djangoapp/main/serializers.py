@@ -100,10 +100,11 @@ class RequestSerializer(serializers.ModelSerializer):
     staff_approved = serializers.StringRelatedField()
     supervisor_approved = serializers.StringRelatedField()
     prepare_by = serializers.StringRelatedField()
+    lines = LineSerializer(many=True)
     # components = ComponentWithoutSerialsSerializer(many=True, read_only=True)
     class Meta(object):
         model = Request
-        fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'prepare_by','status', 
+        fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'prepare_by','status', 'lines',
                   'rejected', 'purpose_detail', 'purpose_type', 'scrap_status', 'scrap_list', 'self_pickup',
                   'requester_name_center', 'requester_emp_center',
                   'issue_date', 'complete_date']
@@ -140,6 +141,7 @@ class MemberSerializer(serializers.ModelSerializer):
 class HistoryTradingSerializer(serializers.ModelSerializer):
     component = ComponentImageSerializer()
     po_number = PoSerializer()
+    lines = LineSerializer(many=True)
     class Meta(object):
         model = HistoryTrading
         fields = '__all__'
