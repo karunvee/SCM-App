@@ -3,7 +3,9 @@ import ast
 from datetime import datetime
 import pytz
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Exists, OuterRef
 from datetime import datetime, timedelta
+import time
 
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -464,7 +466,7 @@ def pick_up(request):
                     request_id = request_obj.id,
                     serial_numbers = serial_numbers,
                     scrap_qty = len(scrap_list),
-                    scrap_serial_numbers = scrap_list
+                    scrap_serial_numbers = scrap_list,
                 )) 
             
             Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
@@ -475,25 +477,30 @@ def pick_up(request):
         if not request_obj.update_status_to_next():
             return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
         
-        created_history  = HistoryTrading.objects.bulk_create(history_items)
-        
-        # Handle many-to-many relationships for lines
+        # Step 1: Bulk create the HistoryTrading objects
+        created_history = HistoryTrading.objects.bulk_create(history_items)
+
+        # Step 2: Manually create entries in the intermediate table
         relationship_objects = []
         for history in created_history:
             for line in request_obj.lines.all():
                 relationship_objects.append(
-                    HistoryTrading.lines.through(historytrading_id=history.id, line_id=line.id)
+                    HistoryTrading.lines.through(
+                        historytrading_id=history.id,
+                        line_id=line.id
+                    )
                 )
+        # Bulk create the relationships in the intermediate table
         HistoryTrading.lines.through.objects.bulk_create(relationship_objects)
 
-
-        request_obj.delete()
-
+        # Cleanup old history and PO records
         HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
-        poOnExpired = PO.objects.filter(issue_date__lte = year_expired_date)
-        for pE in poOnExpired:
-            if not SerialNumber.objects.filter(po=pE).exists():
-                poOnExpired.delete()
+        
+        PO.objects.filter(issue_date__lte=year_expired_date).annotate(
+            has_serials=Exists(SerialNumber.objects.filter(po=OuterRef('pk')))
+        ).filter(has_serials=False).delete()
+        
+        request_obj.delete()
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -506,82 +513,181 @@ def pick_up(request):
 def set_self_pick_up(request):
     try:
         now = datetime.now(pytz.timezone('Asia/Bangkok'))
-        year_expired_date = now - timedelta(days = 2000)
+        year_expired_date = now - timedelta(days=2000)
 
         request_id = request.data.get('request_id')
         emp_name = request.data.get('emp_name')
         serial_numbers_input = request.data.get('serial_numbers')
         sn_list = [item['sn'] for item in serial_numbers_input]
 
-        request_obj = get_object_or_404(Request, id = request_id)
+        request_obj = get_object_or_404(Request, id=request_id)
 
-        Request.objects.filter(id = request_id).update(self_pickup = True)
-        SerialNumber.objects.filter(serial_number__in = sn_list).update(request = request_obj)
-        
+        # Update request as self-pickup
+        request_obj.self_pickup = True
+        request_obj.save()
+
+        # Update serial numbers
+        SerialNumber.objects.filter(serial_number__in=sn_list).update(request=request_obj)
+
+        # Prepare history items
         history_items = []
-        component_relate = RequestComponentRelation.objects.filter(request = request_obj)
+        component_relate = RequestComponentRelation.objects.filter(request=request_obj)
+
         for cr in component_relate:
-            serial_numbers_obj = SerialNumber.objects.filter(request__id = request_obj.id, component = cr.component)
-            serial_numbers = []
-            for sn in serial_numbers_obj:
-                serial_numbers.append(sn.serial_number)
+            serial_numbers_obj = SerialNumber.objects.filter(request=request_obj, component=cr.component)
+            serial_numbers = [sn.serial_number for sn in serial_numbers_obj]
 
-            if(request_obj.requester_name_center):
-                request_name = f"{request_obj.requester_emp_center}, {request_obj.requester_name_center} ({request_obj.requester.username})"
-            else:
-                request_name = f"{request_obj.requester.emp_id}, {request_obj.requester.username}"
+            request_name = (
+                f"{request_obj.requester_emp_center}, {request_obj.requester_name_center} ({request_obj.requester.username})"
+                if request_obj.requester_name_center
+                else f"{request_obj.requester.emp_id}, {request_obj.requester.username}"
+            )
 
+            scrap_qty, scrap_serial_numbers = (0, [])
+            if request_obj.scrap_list and not cr.component.unique_component:
+                scrap_data = ast.literal_eval(request_obj.scrap_list)
+                scrap_qty = len(scrap_data)
+                scrap_serial_numbers = [sc['sn'] for sc in scrap_data]
 
-            if(request_obj.scrap_list and not cr.component.unique_component):
-                scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
-                scrap_serial_numbers = ast.literal_eval(request_obj.scrap_list)
-            else:
-                scrap_qty = 0
-                scrap_serial_numbers = []
-
-            scrap_sn_list = [sc['sn'] for sc in scrap_serial_numbers]
-
-            history_items.append(HistoryTrading(
-                    requester = request_name,
-                    staff_approved = request_obj.staff_approved.username,
-                    supervisor_approved = request_obj.supervisor_approved.username,
-                    trader = emp_name,
-                    left_qty = (cr.component.quantity - cr.qty),
-                    gr_qty = 0,
-                    gi_qty = cr.qty,
-                    scrap_qty = scrap_qty,
-                    purpose_type = request_obj.purpose_type,
+            history_items.append(
+                HistoryTrading(
+                    requester=request_name,
+                    staff_approved=request_obj.staff_approved.username,
+                    supervisor_approved=request_obj.supervisor_approved.username,
+                    trader=emp_name,
+                    left_qty=(cr.component.quantity - cr.qty),
+                    gr_qty=0,
+                    gi_qty=cr.qty,
+                    scrap_qty=scrap_qty,
+                    purpose_type=request_obj.purpose_type,
                     purpose_detail=request_obj.purpose_detail,
                     component=cr.component,
-                    request_id = request_obj.id,
-                    serial_numbers = serial_numbers,
-                    scrap_serial_numbers = scrap_sn_list
-            )) 
-            
-            Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
+                    request_id=request_obj.id,
+                    serial_numbers=serial_numbers,
+                    scrap_serial_numbers=scrap_serial_numbers,
+                )
+            )
+
+            # Update component quantity
+            Component.objects.filter(pk=cr.component.pk).update(quantity=F('quantity') - cr.qty)
+
             if not cr.component.unique_component:
                 serial_numbers_obj.delete()
 
-        
-        created_history  = HistoryTrading.objects.bulk_create(history_items)
-        
-        # Handle many-to-many relationships for lines
+        # Step 1: Bulk create the HistoryTrading objects
+        created_history = HistoryTrading.objects.bulk_create(history_items)
+
+        # Cleanup old history and PO records
+        HistoryTrading.objects.filter(issue_date__lte=year_expired_date).delete()
+
+        PO.objects.filter(issue_date__lte=year_expired_date).annotate(
+            has_serials=Exists(SerialNumber.objects.filter(po=OuterRef('pk')))
+        ).filter(has_serials=False).delete()
+
+
+        # Step 2: Manually create entries in the intermediate table
         relationship_objects = []
-        for history in created_history:
-            for line in request_obj.lines.all():
-                relationship_objects.append(
-                    HistoryTrading.lines.through(historytrading_id=history.id, line_id=line.id)
-                )
-        HistoryTrading.lines.through.objects.bulk_create(relationship_objects)
+        try:
+            for history in created_history:
+                for line in request_obj.lines.all():
+                    print('relationship_objects >>>>>>', history.id, line.id)
+                    relationship_objects.append(
+                        HistoryTrading.lines.through(
+                            historytrading_id=history.id,
+                            line_id=line.id
+                        )
+                    )
+            # Bulk create the relationships in the intermediate table
+            HistoryTrading.lines.through.objects.bulk_create(relationship_objects, batch_size=7000)
+            print(' >>>>>>', {created_history}, {relationship_objects})
 
-        HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
-
-        poOnExpired = PO.objects.filter(issue_date__lte = year_expired_date)
-        for pE in poOnExpired:
-            if not SerialNumber.objects.filter(po=pE).exists():
-                poOnExpired.delete()
+        except Exception as e:
+            print(str(e))
+            return Response({"detail": f"Error: {str(e)}, {created_history}, {relationship_objects}"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
         print(str(e))
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    
+# def set_self_pick_up(request):
+#     try:
+#         now = datetime.now(pytz.timezone('Asia/Bangkok'))
+#         year_expired_date = now - timedelta(days = 2000)
+
+#         request_id = request.data.get('request_id')
+#         emp_name = request.data.get('emp_name')
+#         serial_numbers_input = request.data.get('serial_numbers')
+#         sn_list = [item['sn'] for item in serial_numbers_input]
+
+#         request_obj = get_object_or_404(Request, id = request_id)
+
+#         Request.objects.filter(id = request_id).update(self_pickup = True)
+#         SerialNumber.objects.filter(serial_number__in = sn_list).update(request = request_obj)
+        
+#         history_items = []
+#         component_relate = RequestComponentRelation.objects.filter(request = request_obj)
+#         for cr in component_relate:
+#             serial_numbers_obj = SerialNumber.objects.filter(request__id = request_obj.id, component = cr.component)
+#             serial_numbers = []
+#             for sn in serial_numbers_obj:
+#                 serial_numbers.append(sn.serial_number)
+
+#             if(request_obj.requester_name_center):
+#                 request_name = f"{request_obj.requester_emp_center}, {request_obj.requester_name_center} ({request_obj.requester.username})"
+#             else:
+#                 request_name = f"{request_obj.requester.emp_id}, {request_obj.requester.username}"
+
+
+#             if(request_obj.scrap_list and not cr.component.unique_component):
+#                 scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
+#                 scrap_serial_numbers = ast.literal_eval(request_obj.scrap_list)
+#             else:
+#                 scrap_qty = 0
+#                 scrap_serial_numbers = []
+
+#             scrap_sn_list = [sc['sn'] for sc in scrap_serial_numbers]
+
+#             history_items.append(HistoryTrading(
+#                     requester = request_name,
+#                     staff_approved = request_obj.staff_approved.username,
+#                     supervisor_approved = request_obj.supervisor_approved.username,
+#                     trader = emp_name,
+#                     left_qty = (cr.component.quantity - cr.qty),
+#                     gr_qty = 0,
+#                     gi_qty = cr.qty,
+#                     scrap_qty = scrap_qty,
+#                     purpose_type = request_obj.purpose_type,
+#                     purpose_detail=request_obj.purpose_detail,
+#                     component=cr.component,
+#                     request_id = request_obj.id,
+#                     serial_numbers = serial_numbers,
+#                     scrap_serial_numbers = scrap_sn_list,
+#                     lines=request_obj.lines
+#             )) 
+            
+#             Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
+#             if not cr.component.unique_component:
+#                 serial_numbers_obj.delete()
+
+        
+#         # Bulk create history records
+#         created_history = HistoryTrading.objects.bulk_create(history_items)
+
+#         # Assign many-to-many lines relationship
+#         for history in created_history:
+#             history.lines.set(request_obj.lines.all())
+
+
+#         HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
+
+#         poOnExpired = PO.objects.filter(issue_date__lte = year_expired_date)
+#         for pE in poOnExpired:
+#             if not SerialNumber.objects.filter(po=pE).exists():
+#                 poOnExpired.delete()
+
+#         return Response({"detail": "success"}, status=status.HTTP_200_OK)
+#     except Exception as e:
+#         print(str(e))
+#         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

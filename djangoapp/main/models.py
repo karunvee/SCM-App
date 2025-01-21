@@ -296,7 +296,7 @@ class HistoryTrading(models.Model):
     issue_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.requester
+        return f"{self.requester}, id: {self.pk}"
 
 class InventoryReport(models.Model):
     STATUS = (('Abnormal', 'Abnormal'), ('Normal', 'Normal'))
