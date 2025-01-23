@@ -14,3 +14,10 @@ CREATE TABLE main_inventoryreport (
     inventory_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (location_id) REFERENCES Location(id) ON DELETE CASCADE
 );
+
+
+pip freeze > requirements.txt
+
+pip wheel -r requirements.txt
+
+pip install wheelhouse/*

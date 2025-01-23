@@ -590,7 +590,7 @@ def set_self_pick_up(request):
         try:
             for history in created_history:
                 for line in request_obj.lines.all():
-                    print('relationship_objects >>>>>>', history.id, line.id)
+                    # print('relationship_objects >>>>>>', history.id, line.id)
                     relationship_objects.append(
                         HistoryTrading.lines.through(
                             historytrading_id=history.id,
@@ -598,8 +598,7 @@ def set_self_pick_up(request):
                         )
                     )
             # Bulk create the relationships in the intermediate table
-            HistoryTrading.lines.through.objects.bulk_create(relationship_objects, batch_size=7000)
-            print(' >>>>>>', {created_history}, {relationship_objects})
+            HistoryTrading.lines.through.objects.bulk_create(relationship_objects)
 
         except Exception as e:
             print(str(e))
@@ -608,7 +607,7 @@ def set_self_pick_up(request):
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
         print(str(e))
-        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     
 # def set_self_pick_up(request):
