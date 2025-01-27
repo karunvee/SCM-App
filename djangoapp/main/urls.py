@@ -80,4 +80,7 @@ urlpatterns = [
     path('line/delete/<str:line_name>/', delete_line, name='delete_line'),
 
 
+    path('data/analysis_summary/', data_analysis_summary, name='data_analysis_summary'),
+
+
 ]

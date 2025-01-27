@@ -20,6 +20,7 @@ from .API.general import *
 from .API.cart_request import *
 from .API.approved_route import *
 from .API.line_section import *
+from .API.summary import *
 
 
 @api_view(['POST'])

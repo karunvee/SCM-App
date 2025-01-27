@@ -119,7 +119,7 @@ class ComponentAdmin(admin.ModelAdmin):
         'unique_component',
         'location',
                     )
-    list_filter = ['component_type', 'department', 'location']
+    list_filter = ['component_type', 'machine_type', 'department', 'location']
 
     def get_serial_numbers(self, obj):
         return ', '.join([sn.serial_number for sn in obj.serial_numbers.all()])
