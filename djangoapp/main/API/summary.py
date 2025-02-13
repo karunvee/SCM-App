@@ -41,7 +41,7 @@ def data_analysis_summary(request):
         start_date =  datetime.strptime(date_range['start'], '%m/%d/%Y').date()
         end_date =  datetime.strptime(date_range['end'], '%m/%d/%Y').date()
 
-        date_series = []
+        data_series = []
         date_labels = []
         labelUpdated = False
         for line in lines:
@@ -50,11 +50,12 @@ def data_analysis_summary(request):
             series_index['gi_data'] = []
             series_index['scrap_data'] = []
             series_index['cost_data'] = []
+            series_index['data'] = []
 
             if date_mode == 'Days':
                 current_date = start_date
                 while current_date <= end_date:
-                    # print(current_date)  # You can replace this with the action you need to perform
+
                     hObj = HistoryTrading.objects.filter(
                         Q(lines__line_name=line) &\
                         Q(component__location__name__in=locations) &\
@@ -79,21 +80,35 @@ def data_analysis_summary(request):
 
             elif date_mode == 'Months':
                 current_date = start_date.replace(day=1)  # Set the day to 1 to avoid inconsistencies
+                
                 while current_date <= end_date:
-                    print(current_date.month)  # You can replace this with your desired output or action
-                    if not labelUpdated : date_labels.append(current_date)
+                    # print(current_date, end_date)
+                    hObj = HistoryTrading.objects.filter(
+                        Q(lines__line_name=line) &\
+                        Q(component__location__name__in=locations) &\
+                        Q(component__component_type__name__in=component_types) &\
+                        Q(component__machine_type__name__in=machine_types) &\
+                        Q(issue_date__month=current_date.month)
+                    )
+                    gi = 0
+                    scrap = 0
+                    cost = 0
+                    for h in hObj:
+                        gi = gi + h.gi_qty
+                        scrap = scrap + h.scrap_qty
+                        cost = cost + (h.component.price * h.gi_qty)
 
-                    query &= Q(date__month=current_date.month)
-                    hObj = HistoryTrading.objects.filter(query)
+                    series_index['gi_data'].append(gi)
+                    series_index['scrap_data'].append(scrap)
+                    series_index['cost_data'].append(cost)
 
-                    series_index['data'].append(current_date)
-
+                    if not labelUpdated : date_labels.append(datetime.strftime(current_date, '%Y-%m'))
                     current_date += relativedelta(months=1)  # Move to the next month
 
             elif date_mode == 'Years':
                 current_date = start_date.replace(month=1, day=1)  # Set the date to the 1st of January of the start year
                 while current_date <= end_date:
-                    print(current_date.year)  # You can replace this with your desired output or action
+                    # print(current_date.year)  # You can replace this with your desired output or action
                     if not labelUpdated : date_labels.append(current_date)
                     series_index['data'].append(current_date)
 
@@ -102,20 +117,39 @@ def data_analysis_summary(request):
                 return Response({"detail": 'date_mode data format is not correct'}, status=status.HTTP_409_CONFLICT)
             
             labelUpdated = True
-            date_series.append(series_index)
+            data_series.append(series_index)
 
 
         data = {}
         data['overall'] = {}
-        data['overall']['series'] = date_series
+        data['overall']['series'] = data_series
         data['overall']['labels'] = date_labels
 
+        data['gi_total'] = {}
+        data['gi_total']["series"] = []
+        data['gi_total']["labels"] = []
+        data['scrap_total'] = {}
+        data['scrap_total']["series"] = []
+        data['scrap_total']["labels"] = []
         data['cost_total'] = {}
-        data['gi_scrap'] = {}
+        data['cost_total']["series"] = []
+        data['cost_total']["labels"] = []
+        for s in data_series:
+            tt_gi_line = 0
+            tt_scrap_line = 0
+            tt_cost_line = 0
 
-        # for hObj in HistoryTradingObj:
+            for gi_line in s["gi_data"]: tt_gi_line += gi_line
+            data['gi_total']["labels"].append(s["name"])
+            data['gi_total']["series"].append(tt_gi_line)
 
+            for scrap_line in s["scrap_data"]: tt_scrap_line += scrap_line
+            data['scrap_total']["labels"].append(s["name"])
+            data['scrap_total']["series"].append(tt_scrap_line)
 
+            for cost_line in s["cost_data"]: tt_cost_line += cost_line
+            data['cost_total']["labels"].append(s["name"])
+            data['cost_total']["series"].append(tt_cost_line)
 
 
         return Response({"detail": "success", "data": data}, status=status.HTTP_200_OK)
@@ -123,22 +157,3 @@ def data_analysis_summary(request):
     except Exception as e:
         print(str(e))
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-        
-#  overall: {
-#                 series: [
-#                     {
-#                         name: "L1",
-#                         data: [10, 41, 35, 51, 49, 62, 69, 91, 148]
-#                     },
-#                     {
-#                         name: "L2",
-#                         data: [41, 25, 25, 12, 65, 45, 89, 21, 25]
-#                     },
-#                     {
-#                         name: "L3",
-#                         data: [47, 85, 75, 45, 35, 12, 77, 25, 42]
-#                     }
-#                 ],
-#                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep']
-#             }    
