@@ -94,15 +94,15 @@ def approval_list(request):
             route = get_object_or_404(ApprovedRoute, production_area = approver.production_area)
             
             if route.staff_route == approver and route.supervisor_route != approver:
-                request_obj = Request.objects.filter(staff_approved = approver, status = 'Requested')
+                request_obj = Request.objects.filter(staff_approved = approver, status = 'Requested').order_by('-issue_date')
             elif route.staff_route != approver and route.supervisor_route == approver:
-                request_obj = Request.objects.filter(supervisor_approved = approver, status = 'Staff')
+                request_obj = Request.objects.filter(supervisor_approved = approver, status = 'Staff').order_by('-issue_date')
             elif route.staff_route == approver and route.supervisor_route == approver:
-                request_obj = Request.objects.filter(status__in = ['Requested', 'Staff'])
+                request_obj = Request.objects.filter(status__in = ['Requested', 'Staff']).order_by('-issue_date')
             else:
                 if not approver.is_supervisor:
                     return Response({"detail": "Not found, you have no approved route."}, status=status.HTTP_404_NOT_FOUND)
-                request_obj = Request.objects.filter(status__in = ['Requested', 'Staff'])
+                request_obj = Request.objects.filter(status__in = ['Requested', 'Staff']).order_by('-issue_date')
             
             print(approver.production_area)
 
@@ -286,7 +286,7 @@ def all_request_list(request):
 
             requesterObj = get_object_or_404(Member, emp_id = emp_id)
 
-            request_obj = Request.objects.filter(requester__production_area = requesterObj.production_area)
+            request_obj = Request.objects.filter(requester__production_area = requesterObj.production_area).order_by('-issue_date')
             
             requests_serializer = RequestSerializer(instance=request_obj, many=True)
             # Custom Serializer Data
