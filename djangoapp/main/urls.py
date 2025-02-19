@@ -18,6 +18,8 @@ urlpatterns = [
     path('storage/list/', component_list , name='component_list'), # without Serial Number List
     path('storage/list/filter/', component_filter , name='component_filter'), # with Serial Number List
     path('storage/item/info/', component_get_one , name='component_get_one'),
+    path('equipment/serial_number/search/', component_qrcode_search , name='component_qrcode_search'),
+
 
     path('component/info/cart/', component_cart , name='component_cart'),
     path('checkout/cart/', checkout_cart , name='checkout_cart'),
@@ -62,6 +64,8 @@ urlpatterns = [
     path('po/number/history/', get_po, name='get_po'),
     path('po/number/add/', add_po, name='add_po'),
     path('po/number/<str:pn>/', mod_po, name='mod_po'),
+    path('po/serial_number/search/', po_qrcode_search , name='po_qrcode_search'),
+    path('po/equipment/search/', po_equipment_search , name='po_equipment_search'),
 
     path('po_relative_component/<str:po_number>/', po_relative_component, name='po_relative_component'),
     path('inventory_list/', inventory_list, name='inventory_list'),

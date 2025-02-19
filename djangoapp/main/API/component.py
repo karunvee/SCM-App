@@ -29,6 +29,20 @@ def component_list(request):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
+def component_qrcode_search(request):
+    try:
+        qrcode_search = request.data.get('qrcode_search')
+        print(qrcode_search)
+        s = get_object_or_404(SerialNumber, serial_number = qrcode_search)
+        c = get_object_or_404(Component, model = s.component.model)
+        serializers = ComponentSerializer(instance = c)
+        return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])

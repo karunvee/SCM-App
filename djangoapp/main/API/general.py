@@ -135,6 +135,36 @@ def get_po(request):
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def po_qrcode_search(request):
+    try:
+        qrcode_search = request.data.get('qrcode_search')
+        print(qrcode_search)
+        s = get_object_or_404(SerialNumber, serial_number = qrcode_search)
+        serializers = PoSerializer(instance = s.po)
+        return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['POST'])
+def po_equipment_search(request):
+    try:
+        equip = request.data.get('equip')
+        print(equip)
+        s = SerialNumber.objects.filter(
+            Q(component__name=equip) | Q(component__model=equip)
+        ) 
+        po_queryset = PO.objects.filter(id__in=s.values_list('po_id', flat=True))  # Extract related Po objects
+        serializers = PoSerializer(instance=po_queryset, many=True)
+
+        return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
