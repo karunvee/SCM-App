@@ -74,7 +74,7 @@ def checkout_cart(request):
             RequestComponentRelation.objects.create(request=requestReceipt, component=component, qty=item['quantity'])
 
         try:
-            send_mail(prodArea.staff_route.email, requestReceipt.id, prodArea.staff_route.emp_id, rqt.emp_id, rqt.username)
+            send_mail(prodArea.staff_route, requestReceipt)
         except Exception as e:
             return Response({"detail": "success", "request_id": requestReceipt.id, "error": f"{str(e)} sending a mail unsuccessfully."}, status=status.HTTP_200_OK)
 

@@ -160,7 +160,22 @@ class MemberAdmin(admin.ModelAdmin):
     )
 admin.site.register(Member, MemberAdmin)
 
+class CarbonCopyRouteAdmin(admin.ModelAdmin):
+    search_fields = ['member']
+    list_display = (
+        'pk',
+        'approve_route',
+        'member',
+                    )
+    list_filter = ['approve_route']
+admin.site.register(CarbonCopyRoute, CarbonCopyRouteAdmin)
+
+class CarbonCopyRouteInline(admin.TabularInline):  # Use 'StackedInline' for a different layout
+    model = CarbonCopyRoute
+    extra = 1 
+
 class ApprovedRouteAdmin(admin.ModelAdmin):
+    inlines = [CarbonCopyRouteInline]
     search_fields = ['id', 'supervisor_route__name']
     list_display = (
         'id',
@@ -168,6 +183,11 @@ class ApprovedRouteAdmin(admin.ModelAdmin):
         'supervisor_route',
         'production_area',
                     )
+    def get_cc_members(self, obj):
+        return ', '.join([cc_member.member.email for cc_member in obj.carbon_copy_route.all()])
+    
+    get_cc_members.short_description = 'CC Members'
+
 admin.site.register(ApprovedRoute, ApprovedRouteAdmin)
 
 class HistoryTradingAdmin(admin.ModelAdmin):

@@ -92,6 +92,14 @@ class ApprovedRoute(models.Model):
 
     def __str__(self):
         return self.production_area.prod_area_name
+    
+class CarbonCopyRoute(models.Model):
+    approve_route = models.ForeignKey(ApprovedRoute, on_delete=models.CASCADE, related_name='carbon_copy_route')
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='cc_member')
+
+    def __str__(self):
+        return f'{self.member.name}, {self.approve_route.production_area.prod_area_name}'
+
 
 class Department(models.Model):
     name = models.CharField(max_length = 250)

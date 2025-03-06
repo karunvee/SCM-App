@@ -164,7 +164,7 @@ def approved_order(request):
                 r_status = requestData.get_status_index()
                 if r_status == 1:
                     try:
-                        send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
+                        send_mail(prodArea.supervisor_route, requestData)
                     except Exception as e:
                         return Response({"detail": "success", "mail": f"{str(e)} sending a mail unsuccessfully."}, status=status.HTTP_200_OK)
                 if r_status == 2:
@@ -228,7 +228,7 @@ def approved_order_byMail(request):
                     r_status = requestData.get_status_index()
                     if r_status == 1:
                         try:
-                            send_mail(prodArea.supervisor_route.email, request_id, prodArea.supervisor_route.emp_id, member.emp_id, member.username)
+                            send_mail(prodArea.supervisor_route, requestData)
                         except Exception as e:
                             return Response({"detail": "success", "mail": f"{str(e)} sending a mail unsuccessfully."}, status=status.HTTP_200_OK)
                     if r_status == 2:
@@ -608,85 +608,3 @@ def set_self_pick_up(request):
     except Exception as e:
         print(str(e))
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    
-# def set_self_pick_up(request):
-#     try:
-#         now = datetime.now(pytz.timezone('Asia/Bangkok'))
-#         year_expired_date = now - timedelta(days = 2000)
-
-#         request_id = request.data.get('request_id')
-#         emp_name = request.data.get('emp_name')
-#         serial_numbers_input = request.data.get('serial_numbers')
-#         sn_list = [item['sn'] for item in serial_numbers_input]
-
-#         request_obj = get_object_or_404(Request, id = request_id)
-
-#         Request.objects.filter(id = request_id).update(self_pickup = True)
-#         SerialNumber.objects.filter(serial_number__in = sn_list).update(request = request_obj)
-        
-#         history_items = []
-#         component_relate = RequestComponentRelation.objects.filter(request = request_obj)
-#         for cr in component_relate:
-#             serial_numbers_obj = SerialNumber.objects.filter(request__id = request_obj.id, component = cr.component)
-#             serial_numbers = []
-#             for sn in serial_numbers_obj:
-#                 serial_numbers.append(sn.serial_number)
-
-#             if(request_obj.requester_name_center):
-#                 request_name = f"{request_obj.requester_emp_center}, {request_obj.requester_name_center} ({request_obj.requester.username})"
-#             else:
-#                 request_name = f"{request_obj.requester.emp_id}, {request_obj.requester.username}"
-
-
-#             if(request_obj.scrap_list and not cr.component.unique_component):
-#                 scrap_qty = len(ast.literal_eval(request_obj.scrap_list))
-#                 scrap_serial_numbers = ast.literal_eval(request_obj.scrap_list)
-#             else:
-#                 scrap_qty = 0
-#                 scrap_serial_numbers = []
-
-#             scrap_sn_list = [sc['sn'] for sc in scrap_serial_numbers]
-
-#             history_items.append(HistoryTrading(
-#                     requester = request_name,
-#                     staff_approved = request_obj.staff_approved.username,
-#                     supervisor_approved = request_obj.supervisor_approved.username,
-#                     trader = emp_name,
-#                     left_qty = (cr.component.quantity - cr.qty),
-#                     gr_qty = 0,
-#                     gi_qty = cr.qty,
-#                     scrap_qty = scrap_qty,
-#                     purpose_type = request_obj.purpose_type,
-#                     purpose_detail=request_obj.purpose_detail,
-#                     component=cr.component,
-#                     request_id = request_obj.id,
-#                     serial_numbers = serial_numbers,
-#                     scrap_serial_numbers = scrap_sn_list,
-#                     lines=request_obj.lines
-#             )) 
-            
-#             Component.objects.filter(pk = cr.component.pk).update(quantity = F('quantity') - cr.qty)
-#             if not cr.component.unique_component:
-#                 serial_numbers_obj.delete()
-
-        
-#         # Bulk create history records
-#         created_history = HistoryTrading.objects.bulk_create(history_items)
-
-#         # Assign many-to-many lines relationship
-#         for history in created_history:
-#             history.lines.set(request_obj.lines.all())
-
-
-#         HistoryTrading.objects.filter(issue_date__lte = year_expired_date).delete() 
-
-#         poOnExpired = PO.objects.filter(issue_date__lte = year_expired_date)
-#         for pE in poOnExpired:
-#             if not SerialNumber.objects.filter(po=pE).exists():
-#                 poOnExpired.delete()
-
-#         return Response({"detail": "success"}, status=status.HTTP_200_OK)
-#     except Exception as e:
-#         print(str(e))
-#         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
