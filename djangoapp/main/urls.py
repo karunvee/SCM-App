@@ -2,6 +2,7 @@ from django.urls import path, path
 from .views import *
 
 urlpatterns = [
+    path("proxy/", ProxyView.as_view(), name="proxy"),
     path('login_user/', login_user , name='login_user'),
     path('logout_user/', logout_user , name='logout_user'),
     path('trading/check_in/', check_in , name='check_in'),

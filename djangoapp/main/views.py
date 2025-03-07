@@ -7,6 +7,12 @@ from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+
+from django.views import View
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
 from django.db.models import Q
 import time
 import ldap3
@@ -229,3 +235,66 @@ def delete_machine_type(request, id):
     machineType_obj = get_object_or_404(MachineType, pk = id)
     machineType_obj.delete()
     return Response({"detail": "%s was deleted." % id}, status=status.HTTP_200_OK)
+
+
+class ProxyView(View):
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def forward_request(self, request, method):
+        try:
+            target_url = request.GET.get("url")  # Get URL from query params
+            if not target_url:
+                return JsonResponse({"error": "Missing URL parameter"}, status=400)
+
+            headers = {
+                "Authorization": request.headers.get("Authorization", ""),
+                "Content-Type": request.headers.get("Content-Type", "application/json"),
+            }
+
+            data = request.body if request.body else None
+
+            # Forward the request based on the method
+            response = requests.request(method, target_url, headers=headers, data=data)
+
+            # Check if the response contains JSON
+            try:
+                return JsonResponse(response.json(), status=response.status_code, safe=False)
+            except ValueError:
+                return JsonResponse({"message": "Success"}, status=response.status_code)
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    def get(self, request, *args, **kwargs):
+        return self.forward_request(request, "GET")
+
+    def post(self, request, *args, **kwargs):
+        return self.forward_request(request, "POST")
+
+    def put(self, request, *args, **kwargs):
+        return self.forward_request(request, "PUT")
+
+    def delete(self, request, *args, **kwargs):
+        return self.forward_request(request, "DELETE")
+
+
+# class ProxyView(View):
+#     @method_decorator(csrf_exempt)
+#     def dispatch(self, *args, **kwargs):
+#         return super().dispatch(*args, **kwargs)
+
+#     def put(self, request, *args, **kwargs):
+#         try:
+#             target_url = request.GET.get("url")  # Get URL from query params
+#             headers = {
+#                 "Authorization": request.headers.get("Authorization"),
+#                 "Content-Type": request.headers.get("Content-Type"),
+#             }
+#             response = requests.put(target_url, headers=headers, data=request.body)
+
+#             return JsonResponse(response.json(), status=response.status_code, safe=False)
+#         except Exception as e:
+#             return JsonResponse({"error": str(e)}, status=500)
+    
