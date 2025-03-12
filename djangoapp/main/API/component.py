@@ -405,6 +405,56 @@ def add_item(request):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def return_component(request):
+    try:
+        component_id = request.data.get('component_id')
+        return_sn = request.data.get('return_sn')
+
+        emp_id = request.data.get('emp_id')
+        trader = get_object_or_404(Member, emp_id = emp_id)
+        component_obj = get_object_or_404(Component, pk = component_id)
+    
+        balance = component_obj.quantity + 1
+        component_obj.quantity = balance
+        component_obj.save()
+
+        serials = SerialNumber.objects.filter(component=component_obj)
+        if serials.exists():
+            po = serials.first().po
+        else:
+            po = PO.objects.all().last()
+
+        if not component_obj.unique_component:
+            SerialNumber.objects.create(
+                serial_number = return_sn,
+                component = component_obj,
+                po = po
+            )
+
+        HistoryTrading.objects.create(
+                    requester = "",
+                    staff_approved = "",
+                    supervisor_approved = "",
+                    trader = trader.name,
+                    left_qty = balance,
+                    gr_qty = 1,
+                    gi_qty = 0,
+                    purpose_detail="Return",
+                    component=component_obj,
+                    request_id = "",
+                    po_number = po,
+                    serial_numbers = return_sn
+            )
+
+        return Response({"detail": f"Return items to stock: {return_sn}"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
