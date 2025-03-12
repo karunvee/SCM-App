@@ -166,10 +166,15 @@ def add_component(request):
         line_safety_stock = request.data.get('line_safety_stock')
 
 
-        comObj = Component.objects.filter(model__iexact = model)
+        member = get_object_or_404(Member, emp_id = emp_id)
+        comObj = Component.objects.filter(model = model, location__production_area = member.production_area)
         if comObj.exists():
-            serializer_comp_duplicate = ComponentSerializer(instance = comObj)
-            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck.", "data": serializer_comp_duplicate.data}, status=status.HTTP_409_CONFLICT)
+            serializer_comp_duplicate = ComponentSerializer(instance = comObj, many=True)
+            
+            duplicate_list = ""
+            for d in comObj:
+                duplicate_list += f'{d.model}'
+            return Response({"detail": f"Duplicated model, This [{duplicate_list}] model already exist in the storage", "data": serializer_comp_duplicate.data}, status=status.HTTP_409_CONFLICT)
 
         production_area = get_object_or_404(ProductionArea, prod_area_name=request.data.get('production_name'))
 
@@ -177,7 +182,6 @@ def add_component(request):
         component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
         department = get_object_or_404(Department, name=request.data.get('department'))
         location = get_object_or_404(Location, name=request.data.get('location'), production_area = production_area)
-        member = get_object_or_404(Member, emp_id = emp_id)
 
         quantity = request.data.get('quantity')
         quantity_warning = request.data.get('quantity_warning')

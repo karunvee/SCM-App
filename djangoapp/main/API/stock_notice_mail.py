@@ -23,6 +23,9 @@ def stock_notice_mail(receiver, cc_members, data):
             <th> 
                 Equipment Name
             </th>
+            <th> 
+                Model
+            </th>
             <th>
                 Quantity
             </th>
@@ -31,7 +34,7 @@ def stock_notice_mail(receiver, cc_members, data):
             </th>
         </tr>
         <tr>
-            <td colspan="4" style="height: 1px; background-color: #ababab; margin: 40px 20px;"></td>
+            <td colspan="5" style="height: 1px; background-color: #ababab; margin: 40px 20px;"></td>
         </tr>
 
     '''
@@ -48,6 +51,9 @@ def stock_notice_mail(receiver, cc_members, data):
                 </th>
                 <th> 
                     <h5 style="text-align: center;">{equip.name}</h5>
+                </th>
+                <th> 
+                    <h5 style="text-align: center;">{equip.model}</h5>
                 </th>
                 <th>
                     <h3 style="text-align: center; color: #d43434;">{equip.quantity} unit.</h3>
@@ -108,17 +114,17 @@ def stock_notice_mail(receiver, cc_members, data):
         <table width="100%">
             {content}
             <tr>
-                <td colspan="4" style="height: 1px; background-color: #ababab; margin: 40px 0 0 0;"></td>
+                <td colspan="5" style="height: 1px; background-color: #ababab; margin: 40px 0 0 0;"></td>
             </tr>
             <tr>
-                <td colspan="4">
+                <td colspan="5">
                     <h6>
                     Copyright © 2025 - Spare Part Control Management Application - Delta Electronics (Thailand) PCL. (Application Version 1.3.1) - Developed by DET7-AME. 
                     </h6>
                 </td>
             </tr>
             <tr>
-                <td colspan="4" style="height: 1px; background-color: #ababab; margin: 0 0 40px 0;"></td>
+                <td colspan="5" style="height: 1px; background-color: #ababab; margin: 0 0 40px 0;"></td>
             </tr>
 
         </table>
