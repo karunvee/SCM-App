@@ -1,7 +1,8 @@
 import json
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Q
+from django.db.models import Sum, F, Q, Value
+from django.db.models.functions import Coalesce
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework import status
@@ -17,6 +18,70 @@ from dateutil.relativedelta import relativedelta
 
 from ..models import *
 from ..serializers import *
+
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def data_analysis_breakdown(request):
+    try:
+        line_name = request.data.get('line_name')
+        locations = request.data.get('locations',[])
+        component_types = request.data.get('component_types',[])
+        machine_types = request.data.get('machine_types',[])
+        equipments = request.data.get('equipments',[])
+        date_mode = request.data.get('date_mode').lower()
+        date_range = request.data.get('date_range')
+
+        start_date =  datetime.strptime(date_range['start'], '%m/%d/%Y').date()
+        end_date =  datetime.strptime(date_range['end'], '%m/%d/%Y').date()
+
+        if date_mode == 'days':
+            return Response({"detail": 'This mode is not available to use.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        elif date_mode == 'months':
+
+            hObj = HistoryTrading.objects.filter(
+                Q(lines__line_name=line_name) &\
+                Q(component__location__name__in=locations) &\
+                Q(component__component_type__name__in=component_types) &\
+                Q(component__machine_type__name__in=machine_types) &\
+                Q(issue_date__month__range=[start_date.month, end_date.month])
+            )
+            print(hObj.values_list('component_id', flat=True))
+            print('*****')
+            components = Component.objects.filter(
+                id__in=hObj.values_list('component_id', flat=True)
+            ).annotate(
+                total_gi_qty=Coalesce(Sum('historytrading__gi_qty', filter=Q(historytrading__issue_date__date__range=[start_date, end_date])), Value(0)),
+                total_scrap_qty=Coalesce(Sum('historytrading__scrap_qty', filter=Q(historytrading__issue_date__date__range=[start_date, end_date])), Value(0)),
+                total_price=Coalesce(Sum(F('historytrading__gi_qty') * F('price'), filter=Q(historytrading__issue_date__date__range=[start_date, end_date])), Value(0)),
+            )
+
+            data = [
+                {
+                    "id": component.pk,
+                    "name": component.name,
+                    "model": component.model,
+                    "unique_id": component.unique_id,
+                    "price": component.price,
+                    "location": component.location.name,
+                    "image": component.image_url,
+                    "total_gi_qty": component.total_gi_qty,
+                    "total_scrap_qty": component.total_scrap_qty,
+                    "total_price": component.total_price,
+                }
+                for component in components
+            ]
+
+            return Response({"detail": 'success', "data": data}, status=status.HTTP_200_OK)
+
+        else:
+            return Response({"detail": 'date_mode data format is not correct'}, status=status.HTTP_409_CONFLICT)
+
+    except Exception as e:
+        print(str(e))
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])

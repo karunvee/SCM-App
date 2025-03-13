@@ -87,6 +87,7 @@ urlpatterns = [
 
 
     path('data/analysis_summary/', data_analysis_summary, name='data_analysis_summary'),
-
+    path('data/analysis_breakdown/', data_analysis_breakdown, name='data_analysis_breakdown'),
+    
 
 ]
