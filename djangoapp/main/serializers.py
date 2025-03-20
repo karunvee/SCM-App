@@ -59,7 +59,7 @@ class ComponentSerializer(serializers.ModelSerializer):
     location = serializers.StringRelatedField()
     class Meta(object):
         model = Component
-        fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier', 'equipment_type',
+        fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier', 'equipment_type', 'mro_pn',
                   'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
                   'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date',
                   'consumable', 'image', 'serial_numbers']
@@ -71,7 +71,7 @@ class ComponentWithoutSerialsSerializer(serializers.ModelSerializer):
     location = serializers.StringRelatedField()
     class Meta(object):
         model = Component
-        fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier', 'equipment_type',
+        fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier', 'equipment_type', 'mro_pn',
                   'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
                   'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date', 'missing_list',
                   'consumable', 'image']

@@ -161,6 +161,7 @@ def add_component(request):
         self_pickup = request.data.get('self_pickup')
         unique_component = request.data.get('unique_component')
         equipment_type = request.data.get('equipment_type')
+        mro_pn = request.data.get('mro_pn')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
         line_safety_stock = request.data.get('line_safety_stock')
@@ -196,6 +197,7 @@ def add_component(request):
             unique_component = unique_component.lower() == 'true',
             description=description,
             equipment_type=equipment_type.upper(),
+            mro_pn=mro_pn.upper(),
             price=price,
             supplier=supplier,
             machine_type=machine_type,
@@ -257,6 +259,7 @@ def update_component(request, pk):
         self_pickup = request.data.get('self_pickup')
         unique_component = request.data.get('unique_component')
         equipment_type = request.data.get('equipment_type')
+        mro_pn = request.data.get('mro_pn')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
         line_safety_stock = request.data.get('line_safety_stock')
@@ -325,6 +328,7 @@ def update_component(request, pk):
         component_obj.unique_component = unique_component.lower() == 'true'
         component_obj.description = description
         component_obj.equipment_type = equipment_type.upper()
+        component_obj.mro_pn = mro_pn.upper()
         component_obj.price = price
         component_obj.supplier = supplier
         component_obj.machine_type = machine_type

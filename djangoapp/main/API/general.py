@@ -155,7 +155,7 @@ def po_equipment_search(request):
         equip = request.data.get('equip')
         print(equip)
         s = SerialNumber.objects.filter(
-            Q(component__name=equip) | Q(component__model=equip)
+            Q(component__name__icontains=equip) | Q(component__model__icontains=equip)
         ) 
         po_queryset = PO.objects.filter(id__in=s.values_list('po_id', flat=True))  # Extract related Po objects
         serializers = PoSerializer(instance=po_queryset, many=True)

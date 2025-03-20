@@ -188,3 +188,39 @@ def data_analysis_summary(request):
         return Response({"detail": "success", "data": data}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def data_machinery_summary(request, prod_area_name):
+    try:
+        data = WarRoom_API().getMachinesByProdArea(prod_area_name)
+
+        for line in data:
+            for machine in line["machine_list"]:
+                comp = Component.objects.filter(equipment_type = machine.get("equipment_type"))
+                if comp.exists():
+                    serializers_comp = ComponentSerializer(instance=comp, many=True)
+                    machine["components"] = serializers_comp.data
+                    machine["component_qty"] = comp.count()
+                    machine["component_below_safety"] = comp.filter(quantity__lt=F('quantity_alert')).count()
+                else:
+                    machine["components"] = []
+                    machine["component_qty"] = 0
+                    machine["component_below_safety"] = 0
+
+
+        return Response({"detail": "success", "data": data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+class WarRoom_API:
+    hostname = "http://localhost:8089/api/warroom"
+
+    def getMachinesByProdArea(self, prod_area_name):
+        url = f"{self.hostname}/machine_list/prod_area/?prod_area_name={prod_area_name}"
+        response_data = requests.get(url, verify=False)
+        return response_data.json()

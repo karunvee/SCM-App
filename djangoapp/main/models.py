@@ -154,6 +154,7 @@ class Component(models.Model):
     missing_list = models.TextField(blank = True, null=True) 
 
     equipment_type =  models.CharField(max_length = 250, blank=True)
+    mro_pn =  models.CharField(max_length = 12, blank=True)
 
     modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_c_member')
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_c_member')
