@@ -218,7 +218,7 @@ def data_machinery_summary(request, prod_area_name):
     
 
 class WarRoom_API:
-    hostname = "http://localhost:8089/api/warroom"
+    hostname = "https://thwgrwarroom.deltaww.com:8002/api/warroom"
 
     def getMachinesByProdArea(self, prod_area_name):
         url = f"{self.hostname}/machine_list/prod_area/?prod_area_name={prod_area_name}"
