@@ -84,12 +84,12 @@ def component_filter(request):
             comp_serializers = ComponentSerializer(instance=component_obj, many=True)
 
             for comp in comp_serializers.data:
-                ssRel = LineSafetyStockRelation.objects.filter(component__id = comp['id'])
-                comp['line_safety_stock'] = []
+                ssRel = EquipmentTypeRelation.objects.filter(component__id = comp['id'])
+                comp['equipment_type_safety_stock'] = []
                 for ssRelIndex in ssRel:
-                    comp['line_safety_stock'].append({
+                    comp['equipment_type_safety_stock'].append({
                         'id': ssRelIndex.id,
-                        'line_name': ssRelIndex.line.line_name,
+                        'equipment_type': ssRelIndex.equipment_type.name,
                         'safety_number': ssRelIndex.safety_number,
                         'modify_date': ssRelIndex.modify_date,
                         'added_date': ssRelIndex.added_date,
@@ -164,7 +164,7 @@ def add_component(request):
         mro_pn = request.data.get('mro_pn')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
-        line_safety_stock = request.data.get('line_safety_stock')
+        equipment_type_safety_stock = request.data.get('equipment_type_safety_stock')
 
 
         member = get_object_or_404(Member, emp_id = emp_id)
@@ -196,7 +196,6 @@ def add_component(request):
             self_pickup = self_pickup.lower() == 'true',
             unique_component = unique_component.lower() == 'true',
             description=description,
-            equipment_type=equipment_type.upper(),
             mro_pn=mro_pn.upper(),
             price=price,
             supplier=supplier,
@@ -212,25 +211,28 @@ def add_component(request):
             modify_member=member,
             )
             
-            lineSafetyStockJson = json.loads(line_safety_stock)
-            currentLineSafetyStockId = []
+            equipTypeSafetyStockJson = json.loads(equipment_type_safety_stock)
+            currentEquipTypeSafetyStockId = []
 
-            newLineSafetyStock = []
-            for line in lineSafetyStockJson:
-
-                newLineSafetyStock.append(
-                    LineSafetyStockRelation(
-                        line = get_object_or_404(Line, line_name = line['line_name']),
+            newEquipTypeSafetyStock = []
+            for equipTypeRel in equipTypeSafetyStockJson:
+                equipObj, create = EquipmentType.objects.get_or_create(
+                    name = equipTypeRel['equipment_type'],
+                    defaults={"production_area" : production_area}
+                )
+                newEquipTypeSafetyStock.append(
+                    EquipmentTypeRelation(
+                        equipment_type = equipObj,
                         component = component_obj,
-                        safety_number = line['safety_number'],
+                        safety_number = equipTypeRel['safety_number'],
                         modify_date = now,
                         modify_member = member,
                         added_member = member,
                     )
                 )
 
-            LineSafetyStockRelation.objects.exclude(id__in = currentLineSafetyStockId).delete()
-            LineSafetyStockRelation.objects.bulk_create(newLineSafetyStock)
+            EquipmentTypeRelation.objects.exclude(id__in = currentEquipTypeSafetyStockId).delete()
+            EquipmentTypeRelation.objects.bulk_create(newEquipTypeSafetyStock)
             
             serializer = ComponentSerializer(component_obj)
             return Response({"detail": f"Successfully added {name}.", "data": serializer.data}, status=status.HTTP_201_CREATED)
@@ -258,11 +260,10 @@ def update_component(request, pk):
         description = request.data.get('description')
         self_pickup = request.data.get('self_pickup')
         unique_component = request.data.get('unique_component')
-        equipment_type = request.data.get('equipment_type')
         mro_pn = request.data.get('mro_pn')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
-        line_safety_stock = request.data.get('line_safety_stock')
+        equipment_type_safety_stock = request.data.get('equipment_type_safety_stock')
 
         comObj = Component.objects.filter(model__iexact = model).exclude(pk = pk)
         if comObj.exists():
@@ -283,34 +284,38 @@ def update_component(request, pk):
         member = get_object_or_404(Member, emp_id = emp_id)
 
 
-        lineSafetyStockJson = json.loads(line_safety_stock)
-        currentLineSafetyStockId = []
-        updateLineSafetyStock = []
-        newLineSafetyStock = []
-        for line in lineSafetyStockJson:
+        equipTypeSafetyStockJson = json.loads(equipment_type_safety_stock)
+        currentEquipTypeSafetyStockId = []
+        updateEquipTypeSafetyStock = []
+        newEquipTypeSafetyStock = []
+        for equipTypeRel in equipTypeSafetyStockJson:
 
-            if line['id'] == '':
-                newLineSafetyStock.append(
-                    LineSafetyStockRelation(
-                        line = get_object_or_404(Line, line_name = line['line_name']),
+            if equipTypeRel['id'] == '':
+                equipObj, create = EquipmentType.objects.get_or_create(
+                    name = equipTypeRel['equipment_type'],
+                    defaults={"production_area" : memberObj.production_area}
+                )
+                newEquipTypeSafetyStock.append(
+                    EquipmentTypeRelation(
+                        equipment_type = equipObj,
                         component = component_obj,
-                        safety_number = line['safety_number'],
+                        safety_number = equipTypeRel['safety_number'],
                         modify_date = now,
                         modify_member = member,
                         added_member = member,
                     )
                 )
             else:
-                currentLineSafetyStockId.append(line['id'])
-                LineSsObject = get_object_or_404(LineSafetyStockRelation, id = line['id'])
-                LineSsObject.safety_number = line['safety_number']
-                LineSsObject.modify_date = now
-                LineSsObject.modify_member = member
-                updateLineSafetyStock.append(LineSsObject)
+                currentEquipTypeSafetyStockId.append(equipTypeRel['id'])
+                EquipTypesObj = get_object_or_404(EquipmentTypeRelation, id = equipTypeRel['id'])
+                EquipTypesObj.safety_number = equipTypeRel['safety_number']
+                EquipTypesObj.modify_date = now
+                EquipTypesObj.modify_member = member
+                updateEquipTypeSafetyStock.append(EquipTypesObj)
 
-        LineSafetyStockRelation.objects.bulk_update(updateLineSafetyStock, ['safety_number', 'modify_date', 'modify_member'])
-        LineSafetyStockRelation.objects.exclude(id__in = currentLineSafetyStockId).delete()
-        LineSafetyStockRelation.objects.bulk_create(newLineSafetyStock)
+        EquipmentTypeRelation.objects.bulk_update(updateEquipTypeSafetyStock, ['safety_number', 'modify_date', 'modify_member'])
+        EquipmentTypeRelation.objects.filter(component=component_obj).exclude(id__in=currentEquipTypeSafetyStockId).delete()
+        EquipmentTypeRelation.objects.bulk_create(newEquipTypeSafetyStock)
 
 
         if image:
@@ -327,7 +332,6 @@ def update_component(request, pk):
         component_obj.self_pickup = self_pickup.lower() == 'true'
         component_obj.unique_component = unique_component.lower() == 'true'
         component_obj.description = description
-        component_obj.equipment_type = equipment_type.upper()
         component_obj.mro_pn = mro_pn.upper()
         component_obj.price = price
         component_obj.supplier = supplier

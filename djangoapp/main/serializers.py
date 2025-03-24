@@ -37,6 +37,11 @@ class LineSerializer(serializers.ModelSerializer):
         model = Line
         fields = '__all__'
 
+class EquipmentTypeSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = EquipmentType
+        fields = '__all__'
+
 class SerialNumberSerializer(serializers.ModelSerializer):
     component = serializers.StringRelatedField()
     po = serializers.StringRelatedField()
@@ -44,11 +49,11 @@ class SerialNumberSerializer(serializers.ModelSerializer):
         model = SerialNumber
         fields = '__all__'
 
-class LineSafetyStockRelationSerializer(serializers.ModelSerializer):
-    line = serializers.StringRelatedField()
+class EquipmentTypeRelationSerializer(serializers.ModelSerializer):
+    equipment_type = serializers.StringRelatedField()
     component = serializers.StringRelatedField()
     class Meta(object):
-        model = LineSafetyStockRelation
+        model = EquipmentTypeRelation
         fields = '__all__'
 
 class ComponentSerializer(serializers.ModelSerializer):

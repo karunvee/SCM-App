@@ -31,15 +31,15 @@ class LineAdmin(admin.ModelAdmin):
                     )
 admin.site.register(Line, LineAdmin)
 
-class LineSafetyStockRelationAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'line__line_name', 'component__name', 'component__model']
+class EquipmentTypeRelationAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'equipment_type__name', 'component__name', 'component__model']
     list_display = (
         'id',
         'component',
         'safety_number',
-        'line',
+        'equipment_type',
                     )
-admin.site.register(LineSafetyStockRelation, LineSafetyStockRelationAdmin)
+admin.site.register(EquipmentTypeRelation, EquipmentTypeRelationAdmin)
 
 class DepartmentAdmin(admin.ModelAdmin):
     search_fields = ['name']
@@ -100,14 +100,23 @@ class SerialNumberInline(admin.TabularInline):  # Use 'StackedInline' for a diff
     extra = 1 
 
 
-class LineSafetyStockRelationInline(admin.TabularInline):
-    model = LineSafetyStockRelation
+class EquipmentTypeAdmin(admin.ModelAdmin):
+    search_fields = ['name']
+    list_display = (
+        'production_area',
+        'pk',
+        'name'
+                    )
+admin.site.register(EquipmentType, EquipmentTypeAdmin)
+
+class EquipmentTypeRelationInline(admin.TabularInline):
+    model = EquipmentTypeRelation
     extra = 1  # Number of empty forms to display
-    fields = ('line', 'safety_number', 'modify_date', 'added_date')
+    fields = ('equipment_type', 'safety_number', 'modify_date', 'added_date')
     readonly_fields = ('modify_date', 'added_date')  # Make these fields read-only
 
 class ComponentAdmin(admin.ModelAdmin):
-    inlines = [LineSafetyStockRelationInline, SerialNumberInline]
+    inlines = [EquipmentTypeRelationInline, SerialNumberInline]
     search_fields = ['name', 'model', 'supplier']
     list_display = (
         'name',

@@ -200,17 +200,28 @@ def data_machinery_summary(request, prod_area_name):
 
         for line in data:
             for machine in line["machine_list"]:
-                comp = Component.objects.filter(equipment_type = machine.get("equipment_type"))
-                if comp.exists():
-                    serializers_comp = ComponentSerializer(instance=comp, many=True)
-                    machine["components"] = serializers_comp.data
-                    machine["component_qty"] = comp.count()
-                    machine["component_below_safety"] = comp.filter(quantity__lt=F('quantity_alert')).count()
+                equipment_type_name = machine.get("equipment_type")  # Ensure this corresponds to EquipmentType.name
+                
+                # Get the EquipmentType object
+                equipment_type = EquipmentType.objects.filter(name=equipment_type_name).first()
+                
+                if equipment_type:
+                    # Get related components through EquipmentTypeRelation
+                    comp = Component.objects.filter(equipmenttyperelation__equipment_type=equipment_type)
+                    
+                    if comp.exists():
+                        serializers_comp = ComponentWithoutSerialsSerializer(instance=comp, many=True)
+                        machine["components"] = serializers_comp.data
+                        machine["component_qty"] = comp.count()
+                        machine["component_below_safety"] = comp.filter(quantity__lt=F('quantity_alert')).count()
+                    else:
+                        machine["components"] = []
+                        machine["component_qty"] = 0
+                        machine["component_below_safety"] = 0
                 else:
                     machine["components"] = []
                     machine["component_qty"] = 0
                     machine["component_below_safety"] = 0
-
 
         return Response({"detail": "success", "data": data}, status=status.HTTP_200_OK)
     except Exception as e:

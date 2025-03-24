@@ -123,6 +123,12 @@ class MachineType(models.Model):
     name = models.CharField(max_length = 250)
     def __str__(self):
         return self.name
+    
+class EquipmentType(models.Model):
+    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
+    name = models.CharField(max_length = 250)
+    def __str__(self):
+        return self.name
 
 class Component(models.Model):
     image = models.ImageField(upload_to='images/', blank=True)
@@ -153,13 +159,12 @@ class Component(models.Model):
     next_inventory_date = models.DateTimeField(default=timezone.now)
     missing_list = models.TextField(blank = True, null=True) 
 
-    equipment_type =  models.CharField(max_length = 250, blank=True)
     mro_pn =  models.CharField(max_length = 12, blank=True)
 
     modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_c_member')
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_c_member')
 
-    safety_stock = models.ManyToManyField(Line, through='LineSafetyStockRelation')
+    equipment_type = models.ManyToManyField(EquipmentType, through='EquipmentTypeRelation')
 
     @property
     def image_url(self):
@@ -171,9 +176,9 @@ class Component(models.Model):
     def __str__(self):
         return f"{self.name}, {self.model}"
 
-class LineSafetyStockRelation(models.Model):
+class EquipmentTypeRelation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    line = models.ForeignKey(Line, on_delete=models.CASCADE)
+    equipment_type = models.ForeignKey(EquipmentType, on_delete=models.CASCADE)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
     safety_number = models.PositiveIntegerField(default=1)
     modify_date = models.DateTimeField(default=timezone.now)
@@ -183,7 +188,8 @@ class LineSafetyStockRelation(models.Model):
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_ls_member')
 
     def __str__(self):
-        return f"{self.line.line_name}, {self.component.name}, {self.safety_number}"
+        return f"{self.equipment_type.name}, {self.component.name}"
+    
 
 class PO(models.Model):
     po_number = models.CharField(max_length = 250, blank = True)
