@@ -165,6 +165,19 @@ def basic_info(request, pda):
         return Response(context)
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(['GET'])
+def get_machine_type(request, pda):
+    try:
+        machineTypes = MachineType.objects.filter(Q(production_area__isnull=False) & Q(production_area__prod_area_name=pda)).order_by('name')
+        print(pda, machineTypes)
+        m_serializers = MachineTypeSerializer( instance=machineTypes, many=True)
+
+
+        return Response({"detail": "success", "data": m_serializers.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST', 'PUT'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])

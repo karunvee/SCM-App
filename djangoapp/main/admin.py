@@ -41,6 +41,16 @@ class EquipmentTypeRelationAdmin(admin.ModelAdmin):
                     )
 admin.site.register(EquipmentTypeRelation, EquipmentTypeRelationAdmin)
 
+class MachineTypeRelationRelationAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'machine_type__name', 'component__name', 'component__model']
+    list_display = (
+        'id',
+        'component',
+        'safety_number',
+        'machine_type',
+                    )
+admin.site.register(MachineTypeRelation, MachineTypeRelationRelationAdmin)
+
 class DepartmentAdmin(admin.ModelAdmin):
     search_fields = ['name']
     list_display = (
@@ -66,15 +76,6 @@ class ComponentTypeAdmin(admin.ModelAdmin):
                     )
 admin.site.register(ComponentType, ComponentTypeAdmin)
 
-class MachineTypeAdmin(admin.ModelAdmin):
-    search_fields = ['machine_name']
-    list_display = (
-        'name',
-        'production_area',
-        'pk',
-                    )
-admin.site.register(MachineType, MachineTypeAdmin)
-
 class POAdmin(admin.ModelAdmin):
     search_fields = ['po_number']
     list_display = (
@@ -99,6 +100,21 @@ class SerialNumberInline(admin.TabularInline):  # Use 'StackedInline' for a diff
     model = SerialNumber
     extra = 1 
 
+class MachineTypeAdmin(admin.ModelAdmin):
+    search_fields = ['machine_name']
+    list_display = (
+        'name',
+        'quantity',
+        'production_area',
+        'pk',
+                    )
+admin.site.register(MachineType, MachineTypeAdmin)
+
+class MachineTypeRelationInline(admin.TabularInline):
+    model = MachineTypeRelation
+    extra = 1  # Number of empty forms to display
+    fields = ('machine_type', 'safety_number', 'modify_date', 'added_date')
+    readonly_fields = ('modify_date', 'added_date')  # Make these fields read-only
 
 class EquipmentTypeAdmin(admin.ModelAdmin):
     search_fields = ['name']
@@ -116,7 +132,7 @@ class EquipmentTypeRelationInline(admin.TabularInline):
     readonly_fields = ('modify_date', 'added_date')  # Make these fields read-only
 
 class ComponentAdmin(admin.ModelAdmin):
-    inlines = [EquipmentTypeRelationInline, SerialNumberInline]
+    inlines = [MachineTypeRelationInline, EquipmentTypeRelationInline, SerialNumberInline]
     search_fields = ['name', 'model', 'supplier']
     list_display = (
         'name',
@@ -128,7 +144,7 @@ class ComponentAdmin(admin.ModelAdmin):
         'unique_component',
         'location',
                     )
-    list_filter = ['component_type', 'machine_type', 'department', 'location']
+    list_filter = ['component_type', 'department', 'location']
 
     def get_serial_numbers(self, obj):
         return ', '.join([sn.serial_number for sn in obj.serial_numbers.all()])

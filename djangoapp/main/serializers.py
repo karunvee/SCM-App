@@ -21,10 +21,7 @@ class LocationSerializer(serializers.ModelSerializer):
         model = Location
         fields = ['id', 'name', 'last_inventory_date']
 
-class MachineTypeSerializer(serializers.ModelSerializer):
-    class Meta(object):
-        model = MachineType
-        fields = ['id', 'name']
+
 
 class PoSerializer(serializers.ModelSerializer):
     class Meta(object):
@@ -37,11 +34,6 @@ class LineSerializer(serializers.ModelSerializer):
         model = Line
         fields = '__all__'
 
-class EquipmentTypeSerializer(serializers.ModelSerializer):
-    class Meta(object):
-        model = EquipmentType
-        fields = '__all__'
-
 class SerialNumberSerializer(serializers.ModelSerializer):
     component = serializers.StringRelatedField()
     po = serializers.StringRelatedField()
@@ -49,43 +41,69 @@ class SerialNumberSerializer(serializers.ModelSerializer):
         model = SerialNumber
         fields = '__all__'
 
+class MachineTypeSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = MachineType
+        fields = '__all__'
+
+class EquipmentTypeSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = EquipmentType
+        fields = '__all__'
+
 class EquipmentTypeRelationSerializer(serializers.ModelSerializer):
     equipment_type = serializers.StringRelatedField()
-    component = serializers.StringRelatedField()
     class Meta(object):
         model = EquipmentTypeRelation
+        fields = '__all__'
+
+class MachineTypeRelationSerializer(serializers.ModelSerializer):
+    machine_type = serializers.StringRelatedField()
+    class Meta(object):
+        model = MachineTypeRelation
         fields = '__all__'
 
 class ComponentSerializer(serializers.ModelSerializer):
     serial_numbers  = SerialNumberSerializer(many=True, read_only=True)
     department = serializers.StringRelatedField()
-    machine_type = serializers.StringRelatedField()
     component_type = serializers.StringRelatedField()
     location = serializers.StringRelatedField()
-    class Meta(object):
+
+    equipment_type = EquipmentTypeRelationSerializer(many=True, source='equipmenttyperelation_set')
+    machine_type = MachineTypeRelationSerializer(many=True, source='machinetyperelation_set')
+
+    class Meta:
         model = Component
-        fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier', 'equipment_type', 'mro_pn',
-                  'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
-                  'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date',
-                  'consumable', 'image', 'serial_numbers']
+        fields = [
+            'id', 'name', 'model', 'description', 'unique_id', 'price', 'supplier', 'mro_pn', 'consumable', 'image',
+            'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
+            'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date',
+            'serial_numbers', 'equipment_type', 'machine_type'
+        ]
 
 class ComponentWithoutSerialsSerializer(serializers.ModelSerializer):
     department = serializers.StringRelatedField()
-    machine_type = serializers.StringRelatedField()
     component_type = serializers.StringRelatedField()
     location = serializers.StringRelatedField()
-    class Meta(object):
+
+    equipment_type = EquipmentTypeRelationSerializer(many=True, source='equipmenttyperelation_set')
+    machine_type = MachineTypeRelationSerializer(many=True, source='machinetyperelation_set')
+
+    class Meta:
         model = Component
-        fields = ['id', 'name', 'model', 'description', 'machine_type', 'unique_id', 'price', 'supplier', 'equipment_type', 'mro_pn',
-                  'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
-                  'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date', 'missing_list',
-                  'consumable', 'image']
+        fields = [
+            'id', 'name', 'model', 'description', 'unique_id', 'price', 'supplier', 'mro_pn', 'consumable', 'image',
+            'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
+            'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date',
+            'equipment_type', 'machine_type'
+        ]
 
 class ComponentInfoSerializer(serializers.ModelSerializer):
     department = serializers.StringRelatedField()
     component_type = serializers.StringRelatedField()
-    machine_type = serializers.StringRelatedField()
     location = serializers.StringRelatedField()
+    equipment_type = EquipmentTypeRelationSerializer()
+    machine_type = MachineTypeRelationSerializer()
     class Meta(object):
         model = Component
         fields = '__all__'

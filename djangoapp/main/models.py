@@ -121,22 +121,24 @@ class ComponentType(models.Model):
 class MachineType(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length = 250)
+    quantity = models.IntegerField(default=1)
     def __str__(self):
         return self.name
     
 class EquipmentType(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
-    name = models.CharField(max_length = 250)
+    name = models.CharField(max_length = 250, unique=True)
     def __str__(self):
         return self.name
 
 class Component(models.Model):
+
     image = models.ImageField(upload_to='images/', blank=True)
     name = models.CharField(max_length = 250)
     model = models.CharField(max_length = 250)
     description = models.CharField(max_length = 250, blank = True)
     component_type = models.ForeignKey(ComponentType, on_delete=models.CASCADE)
-    machine_type = models.ForeignKey(MachineType, on_delete=models.CASCADE)
+    # machine_type = models.ForeignKey(MachineType, on_delete=models.CASCADE)
     unique_id = models.CharField(max_length=5, unique=True, default=generate_unique_id, editable=False)
     
     supplier = models.CharField(max_length = 250, blank = True)
@@ -165,6 +167,7 @@ class Component(models.Model):
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_c_member')
 
     equipment_type = models.ManyToManyField(EquipmentType, through='EquipmentTypeRelation')
+    machine_type = models.ManyToManyField(MachineType, through='MachineTypeRelation')
 
     @property
     def image_url(self):
@@ -184,12 +187,25 @@ class EquipmentTypeRelation(models.Model):
     modify_date = models.DateTimeField(default=timezone.now)
     added_date = models.DateTimeField(auto_now_add=True)
 
-    modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_ls_member')
-    added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_ls_member')
+    modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_els_member')
+    added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_els_member')
 
     def __str__(self):
         return f"{self.equipment_type.name}, {self.component.name}"
-    
+
+class MachineTypeRelation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    machine_type = models.ForeignKey(MachineType, on_delete=models.CASCADE)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    safety_number = models.PositiveIntegerField(default=1)
+    modify_date = models.DateTimeField(default=timezone.now)
+    added_date = models.DateTimeField(auto_now_add=True)
+
+    modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_mls_member')
+    added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_mls_member')
+
+    def __str__(self):
+        return f"{self.machine_type.name}, {self.component.name}"    
 
 class PO(models.Model):
     po_number = models.CharField(max_length = 250, blank = True)

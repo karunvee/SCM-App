@@ -84,17 +84,30 @@ def component_filter(request):
             comp_serializers = ComponentSerializer(instance=component_obj, many=True)
 
             for comp in comp_serializers.data:
-                ssRel = EquipmentTypeRelation.objects.filter(component__id = comp['id'])
-                comp['equipment_type_safety_stock'] = []
-                for ssRelIndex in ssRel:
-                    comp['equipment_type_safety_stock'].append({
-                        'id': ssRelIndex.id,
-                        'equipment_type': ssRelIndex.equipment_type.name,
-                        'safety_number': ssRelIndex.safety_number,
-                        'modify_date': ssRelIndex.modify_date,
-                        'added_date': ssRelIndex.added_date,
-                        'modify_member': f"{ssRelIndex.modify_member.emp_id}, {ssRelIndex.modify_member.name}",
-                        'added_member': f"{ssRelIndex.added_member.emp_id}, {ssRelIndex.added_member.name}",
+                essRel = EquipmentTypeRelation.objects.filter(component__id = comp['id'])
+                comp['safety_stock'] = []
+                for essRelIndex in essRel:
+                    comp['safety_stock'].append({
+                        'id': essRelIndex.id,
+                        'type': "equipment_type",
+                        'name': essRelIndex.equipment_type.name,
+                        'safety_number': essRelIndex.safety_number,
+                        'modify_date': essRelIndex.modify_date,
+                        'added_date': essRelIndex.added_date,
+                        'modify_member': f"{essRelIndex.modify_member.emp_id}, {essRelIndex.modify_member.name}",
+                        'added_member': f"{essRelIndex.added_member.emp_id}, {essRelIndex.added_member.name}",
+                    })
+                mssRel = MachineTypeRelation.objects.filter(component__id = comp['id'])
+                for mssRelIndex in mssRel:
+                    comp['safety_stock'].append({
+                        'id': mssRelIndex.id,
+                        'type': "machine_type",
+                        'name': mssRelIndex.machine_type.name,
+                        'safety_number': mssRelIndex.safety_number,
+                        'modify_date': mssRelIndex.modify_date,
+                        'added_date': mssRelIndex.added_date,
+                        'modify_member': f"{mssRelIndex.modify_member.emp_id}, {mssRelIndex.modify_member.name}",
+                        'added_member': f"{mssRelIndex.added_member.emp_id}, {mssRelIndex.added_member.name}",
                     })
 
             return Response({"detail": "success", "data": comp_serializers.data}, status=status.HTTP_200_OK)
@@ -164,7 +177,7 @@ def add_component(request):
         mro_pn = request.data.get('mro_pn')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
-        equipment_type_safety_stock = request.data.get('equipment_type_safety_stock')
+        safety_stock = request.data.get('safety_stock')
 
 
         member = get_object_or_404(Member, emp_id = emp_id)
@@ -211,28 +224,44 @@ def add_component(request):
             modify_member=member,
             )
             
-            equipTypeSafetyStockJson = json.loads(equipment_type_safety_stock)
-            currentEquipTypeSafetyStockId = []
+            safetyStockJson = json.loads(safety_stock)
 
             newEquipTypeSafetyStock = []
-            for equipTypeRel in equipTypeSafetyStockJson:
-                equipObj, create = EquipmentType.objects.get_or_create(
-                    name = equipTypeRel['equipment_type'],
-                    defaults={"production_area" : production_area}
-                )
-                newEquipTypeSafetyStock.append(
-                    EquipmentTypeRelation(
-                        equipment_type = equipObj,
-                        component = component_obj,
-                        safety_number = equipTypeRel['safety_number'],
-                        modify_date = now,
-                        modify_member = member,
-                        added_member = member,
+            newMachineTypeSafetyStock = []
+            for typeRel in safetyStockJson:
+                if typeRel['type'] == "equipment_type":
+                    equipObj, create = EquipmentType.objects.get_or_create(
+                        name = typeRel['equipment_type'],
+                        defaults={"production_area" : production_area}
                     )
-                )
+                    newEquipTypeSafetyStock.append(
+                        EquipmentTypeRelation(
+                            equipment_type = equipObj,
+                            component = component_obj,
+                            safety_number = typeRel['safety_number'],
+                            modify_date = now,
+                            modify_member = member,
+                            added_member = member,
+                        )
+                    )
+                else:
+                    machineObj, create = MachineType.objects.get_or_create(
+                        name = typeRel['equipment_type'],
+                        defaults={"production_area" : production_area}
+                    )
+                    newMachineTypeSafetyStock.append(
+                        MachineTypeRelation(
+                            machine_type = machineObj,
+                            component = component_obj,
+                            safety_number = typeRel['safety_number'],
+                            modify_date = now,
+                            modify_member = member,
+                            added_member = member,
+                        )
+                    )
 
-            EquipmentTypeRelation.objects.exclude(id__in = currentEquipTypeSafetyStockId).delete()
             EquipmentTypeRelation.objects.bulk_create(newEquipTypeSafetyStock)
+            MachineTypeRelation.objects.bulk_create(newMachineTypeSafetyStock)
             
             serializer = ComponentSerializer(component_obj)
             return Response({"detail": f"Successfully added {name}.", "data": serializer.data}, status=status.HTTP_201_CREATED)
@@ -246,111 +275,126 @@ def add_component(request):
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def update_component(request, pk):
-    component_obj = Component.objects.filter(pk = pk)
-    if component_obj.exists():
-        now = datetime.now(pytz.timezone('Asia/Bangkok'))
-        # print(request.data)
-        component_obj = component_obj.first()
-        emp_id = request.data.get('emp_id')
-        image = request.data.get('image')
-        name = request.data.get('name')
-        model = request.data.get('model')
-        # po_number = request.data['po_number']
-        # serial_numbers = request.data['serial_numbers'].split(',')
-        description = request.data.get('description')
-        self_pickup = request.data.get('self_pickup')
-        unique_component = request.data.get('unique_component')
-        mro_pn = request.data.get('mro_pn')
-        price = request.data.get('price')
-        supplier = request.data.get('supplier')
-        equipment_type_safety_stock = request.data.get('equipment_type_safety_stock')
+    try:
+        component_obj = Component.objects.filter(pk = pk)
+        if component_obj.exists():
+            now = datetime.now(pytz.timezone('Asia/Bangkok'))
+            # print(request.data)
+            component_obj = component_obj.first()
+            emp_id = request.data.get('emp_id')
+            image = request.data.get('image')
+            name = request.data.get('name')
+            model = request.data.get('model')
+            # po_number = request.data['po_number']
+            # serial_numbers = request.data['serial_numbers'].split(',')
+            description = request.data.get('description')
+            self_pickup = request.data.get('self_pickup')
+            unique_component = request.data.get('unique_component')
+            mro_pn = request.data.get('mro_pn')
+            price = request.data.get('price')
+            supplier = request.data.get('supplier')
+            safety_stock = request.data.get('safety_stock')
 
-        comObj = Component.objects.filter(model__iexact = model).exclude(pk = pk)
-        if comObj.exists():
-            serializer_comp_duplicate = ComponentWithoutSerialsSerializer(instance = comObj.get())
-            return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck.", "data": serializer_comp_duplicate.data}, status=status.HTTP_409_CONFLICT)
+            comObj = Component.objects.filter(model__iexact = model).exclude(pk = pk)
+            if comObj.exists():
+                serializer_comp_duplicate = ComponentWithoutSerialsSerializer(instance = comObj.get())
+                return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck.", "data": serializer_comp_duplicate.data}, status=status.HTTP_409_CONFLICT)
 
-        memberObj = get_object_or_404(Member, emp_id = emp_id)
+            memberObj = get_object_or_404(Member, emp_id = emp_id)
 
-        machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'), production_area = memberObj.production_area)
-        component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
-        department = get_object_or_404(Department, name=request.data.get('department'))
-        location = get_object_or_404(Location, name=request.data.get('location'), production_area = memberObj.production_area)
+            # machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'), production_area = memberObj.production_area)
+            component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
+            department = get_object_or_404(Department, name=request.data.get('department'))
+            location = get_object_or_404(Location, name=request.data.get('location'), production_area = memberObj.production_area)
 
-        quantity = request.data.get('quantity')
-        quantity_warning = request.data.get('quantity_warning')
-        quantity_alert = request.data.get('quantity_alert')
+            quantity = request.data.get('quantity')
+            quantity_warning = request.data.get('quantity_warning')
+            quantity_alert = request.data.get('quantity_alert')
 
-        member = get_object_or_404(Member, emp_id = emp_id)
+            member = get_object_or_404(Member, emp_id = emp_id)
 
 
-        equipTypeSafetyStockJson = json.loads(equipment_type_safety_stock)
-        currentEquipTypeSafetyStockId = []
-        updateEquipTypeSafetyStock = []
-        newEquipTypeSafetyStock = []
-        for equipTypeRel in equipTypeSafetyStockJson:
+            # Handle safety stock updates
+            safety_stock_json = json.loads(safety_stock)
+            current_safety_stock_ids = []
+            updated_safety_stock = []
+            new_safety_stock = []
+            
+            for entry in safety_stock_json:
+                stock_id = entry.get('id', '')
+                stock_type = entry.get('type')  # Either 'equipment_type' or 'machine_type'
+                name = entry.get('name')
+                safety_number = entry.get('safety_number')
+                
+                if stock_type == 'equipment_type':
+                    equip_obj, created = EquipmentType.objects.get_or_create(name=name, defaults={"production_area": member.production_area})
+                    
+                    if stock_id:
+                        rel_obj = get_object_or_404(EquipmentTypeRelation, id=stock_id)
+                        rel_obj.safety_number = safety_number
+                        rel_obj.modify_date = now
+                        rel_obj.modify_member = member
+                        updated_safety_stock.append(rel_obj)
+                        current_safety_stock_ids.append(stock_id)
+                    else:
+                        new_safety_stock.append(EquipmentTypeRelation(equipment_type=equip_obj, component=component_obj, safety_number=safety_number, modify_date=now, modify_member=member, added_member=member))
+                
+                elif stock_type == 'machine_type':
+                    machine_obj = MachineType.objects.filter(production_area = member.production_area).first()
+                    
+                    if stock_id:
+                        rel_obj = get_object_or_404(MachineTypeRelation, id=stock_id)
+                        rel_obj.safety_number = safety_number
+                        rel_obj.modify_date = now
+                        rel_obj.modify_member = member
+                        updated_safety_stock.append(rel_obj)
+                        current_safety_stock_ids.append(stock_id)
+                    else:
+                        new_safety_stock.append(MachineTypeRelation(machine_type=machine_obj, component=component_obj, safety_number=safety_number, modify_date=now, modify_member=member, added_member=member))
+            
+            # Bulk update and delete stale relations
+            EquipmentTypeRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, EquipmentTypeRelation)], ['safety_number', 'modify_date', 'modify_member'])
+            MachineTypeRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, MachineTypeRelation)], ['safety_number', 'modify_date', 'modify_member'])
+            EquipmentTypeRelation.objects.filter(component=component_obj).exclude(id__in=current_safety_stock_ids).delete()
+            MachineTypeRelation.objects.filter(component=component_obj).exclude(id__in=current_safety_stock_ids).delete()
+            EquipmentTypeRelation.objects.bulk_create([rel for rel in new_safety_stock if isinstance(rel, EquipmentTypeRelation)])
+            MachineTypeRelation.objects.bulk_create([rel for rel in new_safety_stock if isinstance(rel, MachineTypeRelation)])
 
-            if equipTypeRel['id'] == '':
-                equipObj, create = EquipmentType.objects.get_or_create(
-                    name = equipTypeRel['equipment_type'],
-                    defaults={"production_area" : memberObj.production_area}
-                )
-                newEquipTypeSafetyStock.append(
-                    EquipmentTypeRelation(
-                        equipment_type = equipObj,
-                        component = component_obj,
-                        safety_number = equipTypeRel['safety_number'],
-                        modify_date = now,
-                        modify_member = member,
-                        added_member = member,
-                    )
-                )
+
+            if image:
+                component_obj.image = image
+                component_obj.save()
+
+            if unique_component.lower() == 'true':
+                qty = component_obj.quantity
             else:
-                currentEquipTypeSafetyStockId.append(equipTypeRel['id'])
-                EquipTypesObj = get_object_or_404(EquipmentTypeRelation, id = equipTypeRel['id'])
-                EquipTypesObj.safety_number = equipTypeRel['safety_number']
-                EquipTypesObj.modify_date = now
-                EquipTypesObj.modify_member = member
-                updateEquipTypeSafetyStock.append(EquipTypesObj)
+                qty = SerialNumber.objects.filter(component = component_obj).count()
+            # Update other fields
+            component_obj.name = name
+            component_obj.model = model
+            component_obj.self_pickup = self_pickup.lower() == 'true'
+            component_obj.unique_component = unique_component.lower() == 'true'
+            component_obj.description = description
+            component_obj.mro_pn = mro_pn.upper()
+            component_obj.price = price
+            component_obj.supplier = supplier
+            # component_obj.machine_type = machine_type
+            component_obj.component_type = component_type
+            component_obj.department = department
+            component_obj.location = location
+            component_obj.quantity = qty
+            component_obj.quantity_warning = quantity_warning
+            component_obj.quantity_alert = quantity_alert
+            component_obj.modify_member = member
 
-        EquipmentTypeRelation.objects.bulk_update(updateEquipTypeSafetyStock, ['safety_number', 'modify_date', 'modify_member'])
-        EquipmentTypeRelation.objects.filter(component=component_obj).exclude(id__in=currentEquipTypeSafetyStockId).delete()
-        EquipmentTypeRelation.objects.bulk_create(newEquipTypeSafetyStock)
 
-
-        if image:
-            component_obj.image = image
             component_obj.save()
 
-        if unique_component.lower() == 'true':
-            qty = component_obj.quantity
+            return Response({"detail": "%s was update." % name}, status=status.HTTP_200_OK)
         else:
-            qty = SerialNumber.objects.filter(component = component_obj).count()
-        # Update other fields
-        component_obj.name = name
-        component_obj.model = model
-        component_obj.self_pickup = self_pickup.lower() == 'true'
-        component_obj.unique_component = unique_component.lower() == 'true'
-        component_obj.description = description
-        component_obj.mro_pn = mro_pn.upper()
-        component_obj.price = price
-        component_obj.supplier = supplier
-        component_obj.machine_type = machine_type
-        component_obj.component_type = component_type
-        component_obj.department = department
-        component_obj.location = location
-        component_obj.quantity = qty
-        component_obj.quantity_warning = quantity_warning
-        component_obj.quantity_alert = quantity_alert
-        component_obj.modify_member = member
-
-
-        component_obj.save()
-
-        return Response({"detail": "%s was update." % name}, status=status.HTTP_200_OK)
-    else:
-        return Response({"detail": "This data doesn't contain in the database"}, status=status.HTTP_204_NO_CONTENT)
-
+            return Response({"detail": "This data doesn't contain in the database"}, status=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])

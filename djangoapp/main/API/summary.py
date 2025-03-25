@@ -190,6 +190,24 @@ def data_analysis_summary(request):
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def data_machine_type_summary(request, prod_area_name):
+    try:
+        machineTypes = MachineType.objects.filter(production_area__prod_area_name = prod_area_name)
+        print(machineTypes)
+        serializer_machineTypes = MachineTypeSerializer(instance = machineTypes, many=True)
+        for mType in serializer_machineTypes.data:
+           print(mType['name'])
+           comp = Component.objects.filter(machine_type = mType['name'])
+           mType['components'] = ComponentWithoutSerialsSerializer(instance = comp, many = True)
+           mType['component_qty'] = comp.count()
+           mType['component_below_safety'] = comp.filter(quantity__lt=F('quantity_alert')).count()
+
+        return Response({"detail": "success", "data": serializer_machineTypes.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])

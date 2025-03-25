@@ -11,6 +11,7 @@ urlpatterns = [
     path('approved/route/info/', get_approved_route , name='get_approved_route'),    
 
     path('basic_info/list/<str:pda>/', basic_info , name='basic_info'),
+    path('machine_type/list/<str:pda>/', get_machine_type , name='get_machine_type'),
     path('location/add/', add_location , name='add_location'),
     path('location/delete/<str:id>/', delete_location , name='delete_location'),
     path('machine/type/add/', add_machine_type , name='add_machine_type'),
@@ -90,6 +91,7 @@ urlpatterns = [
     path('data/analysis_breakdown/', data_analysis_breakdown, name='data_analysis_breakdown'),
 
     path('data/machinery_summary/<str:prod_area_name>/', data_machinery_summary, name='data_machinery_summary'),
+    path('data/machine_type_summary/<str:prod_area_name>/', data_machine_type_summary, name='data_machine_type_summary'),
     
 
 ]
