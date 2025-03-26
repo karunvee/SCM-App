@@ -35,7 +35,8 @@ class CustomUserManager(BaseUserManager):
         return user
 
 class ProductionArea(models.Model):
-    prod_area_name = models.CharField(max_length = 255, unique=True)
+    prod_area_name = models.CharField(max_length = 100, unique=True)
+    mes_factory = models.CharField(max_length = 100, blank=True, null=True)
     description = models.CharField(max_length = 255)
     detail = models.CharField(max_length = 3)
 
@@ -128,6 +129,7 @@ class MachineType(models.Model):
 class EquipmentType(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length = 250, unique=True)
+    quantity = models.IntegerField(default=1)
     def __str__(self):
         return self.name
 

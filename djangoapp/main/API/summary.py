@@ -214,7 +214,7 @@ def data_machine_type_summary(request, prod_area_name):
 @permission_classes([IsAuthenticated])
 def data_machinery_summary(request, prod_area_name):
     try:
-        data = WarRoom_API().getMachinesByProdArea(prod_area_name)
+        data = WarRoom_API().getMachinesByProdArea('NONE', prod_area_name)
 
         for line in data:
             for machine in line["machine_list"]:
@@ -249,7 +249,7 @@ def data_machinery_summary(request, prod_area_name):
 class WarRoom_API:
     hostname = "https://thwgrwarroom.deltaww.com:8002/api/warroom"
 
-    def getMachinesByProdArea(self, prod_area_name):
-        url = f"{self.hostname}/machine_list/prod_area/?prod_area_name={prod_area_name}"
+    def getMachinesByProdArea(self, plant_area_schema, prod_area_name):
+        url = f"{self.hostname}/machine_list/prod_area/?plant_area_schema={plant_area_schema}&prod_area_name={prod_area_name}"
         response_data = requests.get(url, verify=False)
         return response_data.json()

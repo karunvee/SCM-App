@@ -101,7 +101,7 @@ class SerialNumberInline(admin.TabularInline):  # Use 'StackedInline' for a diff
     extra = 1 
 
 class MachineTypeAdmin(admin.ModelAdmin):
-    search_fields = ['machine_name']
+    search_fields = ['name']
     list_display = (
         'name',
         'quantity',
@@ -119,9 +119,10 @@ class MachineTypeRelationInline(admin.TabularInline):
 class EquipmentTypeAdmin(admin.ModelAdmin):
     search_fields = ['name']
     list_display = (
+        'name',
+        'quantity',
         'production_area',
         'pk',
-        'name'
                     )
 admin.site.register(EquipmentType, EquipmentTypeAdmin)
 

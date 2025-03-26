@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 
 from ..models import *
 from ..serializers import *
+from .summary import WarRoom_API
 
 @api_view(['GET'])
 def component_list(request):
@@ -73,8 +74,7 @@ def component_filter(request):
             component_type_content = query_serializer.validated_data.get('component_type_content')
             machine_type_content = query_serializer.validated_data.get('machine_type_content')
             production_name = query_serializer.validated_data.get('production_name')
-            print(production_name)
-            print('::', component_type_content, machine_type_content)
+
             component_obj = Component.objects.filter(production_area__prod_area_name = production_name).order_by('name')
             if component_type_content != 'All':   
                 component_obj = component_obj.filter(component_type__name = component_type_content).order_by('name')
@@ -91,6 +91,7 @@ def component_filter(request):
                         'id': essRelIndex.id,
                         'type': "equipment_type",
                         'name': essRelIndex.equipment_type.name,
+                        'quantity': essRelIndex.equipment_type.quantity,
                         'safety_number': essRelIndex.safety_number,
                         'modify_date': essRelIndex.modify_date,
                         'added_date': essRelIndex.added_date,
@@ -103,6 +104,7 @@ def component_filter(request):
                         'id': mssRelIndex.id,
                         'type': "machine_type",
                         'name': mssRelIndex.machine_type.name,
+                        'quantity': mssRelIndex.machine_type.quantity,
                         'safety_number': mssRelIndex.safety_number,
                         'modify_date': mssRelIndex.modify_date,
                         'added_date': mssRelIndex.added_date,
@@ -115,6 +117,49 @@ def component_filter(request):
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def update_equipment_type_quantity(request, prod_area_name):
+    try:
+        # Fetch production area
+        prodArea = get_object_or_404(ProductionArea, prod_area_name=prod_area_name)  # Fixed field name
+
+        # Fetch machine data
+        data = WarRoom_API().getMachinesByProdArea(prodArea.mes_factory, "ALL")
+
+        # Fetch all existing equipment types in the production area once
+        existing_equipment = {
+            eq.name: eq for eq in EquipmentType.objects.filter(production_area=prodArea)
+        }
+
+        update_list = []
+        for line in data:
+            for machine in line["machine_list"]:
+                equipment_name = machine["equipment_type"]
+                quantity = machine["equipment_type_count"]
+
+                if equipment_name in existing_equipment:
+                    obj = existing_equipment[equipment_name]
+                    obj.quantity = quantity
+                    update_list.append(obj)
+
+        # Bulk update equipment quantities
+        if update_list:
+            EquipmentType.objects.bulk_update(update_list, ['quantity'])
+
+        return Response(
+            {"detail": "Updated equipment type quantity successfully", "data": data}, 
+            status=status.HTTP_200_OK
+        )
+
+    except Exception as e:
+        return Response(
+            {"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -173,7 +218,6 @@ def add_component(request):
         description = request.data.get('description')
         self_pickup = request.data.get('self_pickup')
         unique_component = request.data.get('unique_component')
-        equipment_type = request.data.get('equipment_type')
         mro_pn = request.data.get('mro_pn')
         price = request.data.get('price')
         supplier = request.data.get('supplier')
@@ -192,7 +236,6 @@ def add_component(request):
 
         production_area = get_object_or_404(ProductionArea, prod_area_name=request.data.get('production_name'))
 
-        machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'), production_area = production_area)
         component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
         department = get_object_or_404(Department, name=request.data.get('department'))
         location = get_object_or_404(Location, name=request.data.get('location'), production_area = production_area)
@@ -212,7 +255,6 @@ def add_component(request):
             mro_pn=mro_pn.upper(),
             price=price,
             supplier=supplier,
-            machine_type=machine_type,
             component_type=component_type,
             department=department,
             location=location,
@@ -323,11 +365,11 @@ def update_component(request, pk):
             for entry in safety_stock_json:
                 stock_id = entry.get('id', '')
                 stock_type = entry.get('type')  # Either 'equipment_type' or 'machine_type'
-                name = entry.get('name')
+                em_name = entry.get('name')
                 safety_number = entry.get('safety_number')
                 
                 if stock_type == 'equipment_type':
-                    equip_obj, created = EquipmentType.objects.get_or_create(name=name, defaults={"production_area": member.production_area})
+                    equip_obj, created = EquipmentType.objects.get_or_create(name=em_name, defaults={"production_area": member.production_area})
                     
                     if stock_id:
                         rel_obj = get_object_or_404(EquipmentTypeRelation, id=stock_id)
@@ -340,7 +382,7 @@ def update_component(request, pk):
                         new_safety_stock.append(EquipmentTypeRelation(equipment_type=equip_obj, component=component_obj, safety_number=safety_number, modify_date=now, modify_member=member, added_member=member))
                 
                 elif stock_type == 'machine_type':
-                    machine_obj = MachineType.objects.filter(production_area = member.production_area).first()
+                    machine_obj = MachineType.objects.filter(production_area = member.production_area, name = em_name).first()
                     
                     if stock_id:
                         rel_obj = get_object_or_404(MachineTypeRelation, id=stock_id)

@@ -221,19 +221,20 @@ def add_machine_type(request):
     try:
         machine_type_name = request.data.get('name')
         prod_area_name = request.data.get('prod_area_name')
+        quantity = request.data.get('quantity')
         id = request.data.get('id')
     
-        print(f"{request.method}, {machine_type_name}, {prod_area_name}, {id}")
-        if MachineType.objects.filter(name = machine_type_name, production_area__prod_area_name = prod_area_name).exists():
+        if MachineType.objects.filter(name = machine_type_name, production_area__prod_area_name = prod_area_name).exclude(pk = id).exists():
             return Response({"detail": "Duplicated, this machine type already exist in the list."}, status=status.HTTP_409_CONFLICT)
         
         if request.method == 'POST':
             MachineType.objects.create(
                 name = machine_type_name,
-                production_area = get_object_or_404(ProductionArea, prod_area_name = prod_area_name)
+                production_area = get_object_or_404(ProductionArea, prod_area_name = prod_area_name),
+                quantity = quantity
             )
         elif request.method == 'PUT':
-            MachineType.objects.filter(id = id).update(name = machine_type_name)
+            MachineType.objects.filter(id = id).update(name = machine_type_name, quantity = quantity)
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:

@@ -68,6 +68,8 @@ class ComponentSerializer(serializers.ModelSerializer):
     department = serializers.StringRelatedField()
     component_type = serializers.StringRelatedField()
     location = serializers.StringRelatedField()
+    modify_member = serializers.StringRelatedField()
+    added_member = serializers.StringRelatedField()
 
     equipment_type = EquipmentTypeRelationSerializer(many=True, source='equipmenttyperelation_set')
     machine_type = MachineTypeRelationSerializer(many=True, source='machinetyperelation_set')
@@ -78,7 +80,7 @@ class ComponentSerializer(serializers.ModelSerializer):
             'id', 'name', 'model', 'description', 'unique_id', 'price', 'supplier', 'mro_pn', 'consumable', 'image',
             'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
             'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date',
-            'serial_numbers', 'equipment_type', 'machine_type'
+            'serial_numbers', 'equipment_type', 'machine_type', 'modify_member', 'added_member'
         ]
 
 class ComponentWithoutSerialsSerializer(serializers.ModelSerializer):
