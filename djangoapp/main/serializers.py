@@ -104,8 +104,8 @@ class ComponentInfoSerializer(serializers.ModelSerializer):
     department = serializers.StringRelatedField()
     component_type = serializers.StringRelatedField()
     location = serializers.StringRelatedField()
-    equipment_type = EquipmentTypeRelationSerializer()
-    machine_type = MachineTypeRelationSerializer()
+    equipment_type = EquipmentTypeRelationSerializer(many=True, source='equipmenttyperelation_set')
+    machine_type = MachineTypeRelationSerializer(many=True, source='machinetyperelation_set')
     class Meta(object):
         model = Component
         fields = '__all__'

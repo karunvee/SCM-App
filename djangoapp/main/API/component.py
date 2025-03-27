@@ -121,36 +121,11 @@ def component_filter(request):
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def update_equipment_type_quantity(request, prod_area_name):
+def auto_align_safety_stock(request, prod_area_name):
     try:
-        # Fetch production area
-        prodArea = get_object_or_404(ProductionArea, prod_area_name=prod_area_name)  # Fixed field name
-
-        # Fetch machine data
-        data = WarRoom_API().getMachinesByProdArea(prodArea.mes_factory, "ALL")
-
-        # Fetch all existing equipment types in the production area once
-        existing_equipment = {
-            eq.name: eq for eq in EquipmentType.objects.filter(production_area=prodArea)
-        }
-
-        update_list = []
-        for line in data:
-            for machine in line["machine_list"]:
-                equipment_name = machine["equipment_type"]
-                quantity = machine["equipment_type_count"]
-
-                if equipment_name in existing_equipment:
-                    obj = existing_equipment[equipment_name]
-                    obj.quantity = quantity
-                    update_list.append(obj)
-
-        # Bulk update equipment quantities
-        if update_list:
-            EquipmentType.objects.bulk_update(update_list, ['quantity'])
-
+        auto_align_safety_stock_function(prod_area_name)
         return Response(
-            {"detail": "Updated equipment type quantity successfully", "data": data}, 
+            {"detail": "Align the safety and warning stock successfully"}, 
             status=status.HTTP_200_OK
         )
 
@@ -160,6 +135,60 @@ def update_equipment_type_quantity(request, prod_area_name):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+
+def auto_align_safety_stock_function(prod_area_name):
+
+    prodArea = get_object_or_404(ProductionArea, prod_area_name=prod_area_name)  # Fixed field name
+
+    # Fetch machine data
+    data = WarRoom_API().getMachinesByProdArea(prodArea.mes_factory, "ALL")
+
+    # Fetch all existing equipment types in the production area once
+    existing_equipment = {
+        eq.name: eq for eq in EquipmentType.objects.filter(production_area=prodArea)
+    }
+
+    update_list = []
+    for line in data:
+        for machine in line["machine_list"]:
+            equipment_name = machine["equipment_type"]
+            quantity = machine["equipment_type_count"]
+
+            if equipment_name in existing_equipment:
+                obj = existing_equipment[equipment_name]
+                obj.quantity = quantity
+                update_list.append(obj)
+
+    # Bulk update equipment quantities
+    if update_list:
+        EquipmentType.objects.bulk_update(update_list, ['quantity'])
+
+
+    all_component_list = Component.objects.filter(location__production_area = prodArea)
+
+    comp_update_list = []
+    for comp in all_component_list:
+        total_acc = 0
+
+        for et in comp.equipmenttyperelation_set.all():
+            # total_acc += et.safety_number * et.equipment_type.quantity
+            total_acc += et.safety_number * getattr(et.equipment_type, 'quantity', 0)
+
+        for mt in comp.machinetyperelation_set.all():
+            # total_acc += mt.safety_number * mt.machine_type.quantity
+            total_acc += mt.safety_number * getattr(mt.machine_type, 'quantity', 0)
+
+        if comp.equipmenttyperelation_set.count() > 0 or comp.machinetyperelation_set.count() > 0:
+
+            comp.quantity_warning = total_acc * 1.8
+            comp.quantity_alert = total_acc * 1.5
+            comp_update_list.append(comp)
+
+
+    if comp_update_list:
+        Component.objects.bulk_update(comp_update_list, ['quantity_warning', 'quantity_alert'])
+
+    print("Align the safety and warning stock successfully")
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])

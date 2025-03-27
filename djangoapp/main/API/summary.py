@@ -1,7 +1,7 @@
 import json
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Sum, F, Q, Value
+from django.db.models import Sum, F, Q, Value, Count
 from django.db.models.functions import Coalesce
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -195,17 +195,26 @@ def data_analysis_summary(request):
 @permission_classes([IsAuthenticated])
 def data_machine_type_summary(request, prod_area_name):
     try:
-        machineTypes = MachineType.objects.filter(production_area__prod_area_name = prod_area_name)
-        print(machineTypes)
-        serializer_machineTypes = MachineTypeSerializer(instance = machineTypes, many=True)
-        for mType in serializer_machineTypes.data:
-           print(mType['name'])
-           comp = Component.objects.filter(machine_type = mType['name'])
-           mType['components'] = ComponentWithoutSerialsSerializer(instance = comp, many = True)
-           mType['component_qty'] = comp.count()
-           mType['component_below_safety'] = comp.filter(quantity__lt=F('quantity_alert')).count()
+        machine_type_list = MachineType.objects.filter(production_area__prod_area_name = prod_area_name)
+        serializers_mt = MachineTypeSerializer(instance = machine_type_list, many=True)
 
-        return Response({"detail": "success", "data": serializer_machineTypes.data}, status=status.HTTP_200_OK)
+        for mt in serializers_mt.data:
+            machine_type_name = mt.get("name")  # Ensure this corresponds to EquipmentType.name
+            
+            comp = Component.objects.filter(machinetyperelation__machine_type__name=machine_type_name)
+            
+            if comp.exists():
+                serializers_comp = ComponentWithoutSerialsSerializer(instance=comp, many=True)
+                mt["components"] = serializers_comp.data
+                mt["component_qty"] = comp.count()
+                mt["component_below_safety"] = comp.filter(quantity__lt=F('quantity_alert')).count()
+            else:
+                mt["components"] = []
+                mt["component_qty"] = 0
+                mt["component_below_safety"] = 0
+
+
+        return Response({"detail": "success", "data": serializers_mt.data}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

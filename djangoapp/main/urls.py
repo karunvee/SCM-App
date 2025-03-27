@@ -91,7 +91,7 @@ urlpatterns = [
     path('data/analysis_breakdown/', data_analysis_breakdown, name='data_analysis_breakdown'),
 
     path('data/machinery_summary/<str:prod_area_name>/', data_machinery_summary, name='data_machinery_summary'),
-    path('data/machine_type_summary/<str:prod_area_name>/', data_machine_type_summary, name='data_machine_type_summary'),
+    path('data/machinery_summary/machine_type/<str:prod_area_name>/', data_machine_type_summary, name='data_machine_type_summary'),
 
-    path('data/update_equipment_type_quantity/<str:prod_area_name>/', update_equipment_type_quantity, name='update_equipment_type_quantity'),
+    path('data/auto_align_safety_stock/<str:prod_area_name>/', auto_align_safety_stock, name='auto_align_safety_stock'),
 ]

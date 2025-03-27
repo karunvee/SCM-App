@@ -14,9 +14,14 @@ from django.utils.timezone import now
 from main.models import *
 from main.serializers import *
 from main.API.stock_notice_mail import stock_notice_mail
+from main.API.component import auto_align_safety_stock_function
 
 def main():
     try:
+        prod_area_list = ProductionArea.objects.all()
+        for prod_area in prod_area_list:
+            auto_align_safety_stock_function(prod_area.prod_area_name)
+
         apr_list = ApprovedRoute.objects.all()
         for apr in apr_list:
             cc_members = CarbonCopyRoute.objects.filter(approve_route = apr)
