@@ -7,6 +7,14 @@ def stock_notice_mail(receiver, cc_members, data):
     EMAIL_ADDRESS = 'warroom_service@deltaww.com'
     EMAIL_PASSWORD = 'W@rRoomServ1ce'
 
+    slice_size = 20
+    if data.count() > slice_size :
+        more_msg = f'''more then {slice_size} items'''
+        equipment_list = data[:slice_size]
+    else:
+        more_msg = ''''''
+        equipment_list = data
+
     print(f'{receiver.production_area.prod_area_name}, {receiver.staff_route.email}, {receiver.supervisor_route.email}, cc to: {cc_members}')
     msg = EmailMessage()
     msg['Subject'] = f'[ SCM Notify ] Safety Stock Notification - Reminder! The quantity of {data.count()} items is below the specified safety stock'
@@ -41,7 +49,7 @@ def stock_notice_mail(receiver, cc_members, data):
     cid_map = {}
 
     # Prepare HTML Content First
-    for equip in data:
+    for equip in equipment_list:
         cid = f'image{equip.id}_cid'  # Unique CID for each image
         cid_map[cid] = f'https://thwgrwarroom.deltaww.com:8089/media/{equip.image}'
         content += f'''
@@ -114,6 +122,11 @@ def stock_notice_mail(receiver, cc_members, data):
         <table width="100%">
             {content}
             <tr>
+                <h5 style="margin: 0; color: #d43434; margin: 20px 0 20px 0; text-align: center;">
+                *************** {more_msg} ***************
+                </h5>
+            </tr>
+            <tr>
                 <td colspan="5" style="height: 1px; background-color: #ababab; margin: 40px 0 0 0;"></td>
             </tr>
             <tr>
@@ -142,7 +155,7 @@ def stock_notice_mail(receiver, cc_members, data):
     msg.get_payload()[1].make_related()
 
     # Attach images after setting HTML content
-    for equip in data:
+    for equip in equipment_list:
         image_url = f'https://thwgrwarroom.deltaww.com:8089/media/{equip.image}'
         res = requests.get(image_url)
 
