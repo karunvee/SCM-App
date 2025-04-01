@@ -134,7 +134,6 @@ class EquipmentType(models.Model):
         return self.name
 
 class Component(models.Model):
-
     image = models.ImageField(upload_to='images/', blank=True)
     name = models.CharField(max_length = 250)
     model = models.CharField(max_length = 250)
@@ -207,7 +206,25 @@ class MachineTypeRelation(models.Model):
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_mls_member')
 
     def __str__(self):
-        return f"{self.machine_type.name}, {self.component.name}"    
+        return f"{self.machine_type.name}, {self.component.name}"
+
+class Tooling(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    quantity_amount = models.IntegerField()
+    quantity_available = models.IntegerField()
+    borrower = models.ManyToManyField(Member, through='BorrowerRelation')
+
+    def __str__(self):
+        return f"{self.component.name}, {self.component.quantity}"
+    
+class BorrowerRelation(models.Model):
+    member = models.ForeignKey(Member, on_delete=models.CASCADE)
+    tooling = models.ForeignKey(Tooling, on_delete=models.CASCADE)
+    borrow_date = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.member.name}, {self.tooling.component.name}, {self.borrow_date}"
 
 class PO(models.Model):
     po_number = models.CharField(max_length = 250, blank = True)
