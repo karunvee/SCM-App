@@ -180,8 +180,8 @@ def auto_align_safety_stock_function(prod_area_name):
 
         if comp.equipmenttyperelation_set.count() > 0 or comp.machinetyperelation_set.count() > 0:
 
-            comp.quantity_warning = total_acc * 1.8
-            comp.quantity_alert = total_acc * 1.5
+            comp.quantity_warning = total_acc * 1.5
+            comp.quantity_alert = total_acc * 1
             comp_update_list.append(comp)
 
 
