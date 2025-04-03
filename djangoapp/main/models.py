@@ -221,10 +221,11 @@ class Tooling(models.Model):
 class BorrowerRelation(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
     tooling = models.ForeignKey(Tooling, on_delete=models.CASCADE)
-    borrow_date = models.DateTimeField(default=timezone.now)
+    borrowed_permanent = models.BooleanField(default= False)
+    borrowed_date = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.member.name}, {self.tooling.component.name}, {self.borrow_date}"
+        return f"{self.member.name}, {self.tooling.component.name}, {self.borrowed_date}"
 
 class PO(models.Model):
     po_number = models.CharField(max_length = 250, blank = True)

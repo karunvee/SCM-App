@@ -202,10 +202,12 @@ class CarbonCopyRouteInline(admin.TabularInline):  # Use 'StackedInline' for a d
 
 class BorrowerRelationAdmin(admin.ModelAdmin):
     search_fields = ['tooling__component__name', "member__username", "member__name", "member__emp_id"]
+    list_filter = ['borrowed_permanent']
     list_display = (
         'member',
         'tooling',
-        'borrow_date',
+        'borrowed_permanent',
+        'borrowed_date',
                     )
 admin.site.register(BorrowerRelation, BorrowerRelationAdmin)
 
@@ -214,7 +216,7 @@ class BorrowerRelationInline(admin.TabularInline):
     model = BorrowerRelation
     extra = 1  # Number of empty forms to display
     fields = ('member', 'tooling')
-    readonly_fields = ['borrow_date']  # Make these fields read-only
+    readonly_fields = ['borrowed_date']  # Make these fields read-only
 
 class ToolingAdmin(admin.ModelAdmin):
     inlines = [BorrowerRelationInline]

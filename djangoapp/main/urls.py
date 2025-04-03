@@ -22,6 +22,8 @@ urlpatterns = [
     path('storage/item/info/', component_get_one , name='component_get_one'),
     path('equipment/serial_number/search/', component_qrcode_search , name='component_qrcode_search'),
 
+    path('tooling/list/', tool_list , name='tool_list'), 
+    path('tooling/add/', add_tool , name='add_tool'), 
 
     path('component/info/cart/', component_cart , name='component_cart'),
     path('checkout/cart/', checkout_cart , name='checkout_cart'),

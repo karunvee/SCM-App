@@ -200,6 +200,21 @@ class InventoryReportSerializer(serializers.ModelSerializer):
         model = InventoryReport
         fields = '__all__'
 
+class BorrowerRelationSerializer(serializers.ModelSerializer):
+    component = ComponentWithoutSerialsSerializer(many=True)
+    borrower = MemberSerializer(many=True)
+    class Meta(object):
+        model = BorrowerRelation
+        fields = '__all__'
+
+class ToolingSerializer(serializers.ModelSerializer):
+    component = ComponentWithoutSerialsSerializer()
+    borrower = MemberSerializer(many=True)
+    class Meta(object):
+        model = Tooling
+        fields = '__all__'
+
+
 # Params
 class ComponentProdNameQuerySerializer(serializers.Serializer):
     production_name = serializers.CharField()

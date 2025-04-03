@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import F
 
 import pytz
 from datetime import datetime, timedelta
@@ -793,3 +794,86 @@ def component_model_exist_checking(request, model):
             return Response({"detail": f"Duplicated model, This model already exist in the storage, please recheck.", "data": serializer_comp_duplicate.data}, status=status.HTTP_409_CONFLICT)
         return Response({"detail": f"pass"}, status=status.HTTP_202_ACCEPTED)
 
+@api_view(['GET'])
+def tool_list(request):
+    try:
+        query_serializer = ComponentProdNameQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            production_name = query_serializer.validated_data.get('production_name')
+            tool_list = Tooling.objects.filter(component__production_area__prod_area_name = production_name).order_by('component__name')
+            serializers = ToolingSerializer(instance=tool_list, many=True)
+
+            for t in serializers.data:
+                for bw in t['borrower']:
+                    borrowerRel = BorrowerRelation.objects.filter(member__username = bw['username'], tooling__component__name = t['component']['name']).first()
+                    bw['borrowed_permanent'] = borrowerRel.borrowed_permanent
+
+            return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def add_tool(request):
+    try:
+        emp_id = request.data.get('emp_id')
+        component_id = request.data.get('component_id')
+        serial_numbers = request.data.get('serial_numbers', [])
+        qty = request.data.get('qty')
+
+        member = get_object_or_404(Member, emp_id = emp_id)
+        component = get_object_or_404(Component, id = component_id)
+
+        transfer_qty = 0
+
+        if component.unique_component:
+            transfer_qty = qty
+        else:
+            transfer_qty = len(serial_numbers)
+
+        serial_numbers_obj = SerialNumber.objects.filter(serial_number__in = serial_numbers)
+        serial_numbers = []
+        for sn in serial_numbers_obj:
+            serial_numbers.append(sn.serial_number)
+
+        HistoryTrading.objects.create(
+            requester = f"{member.emp_id}, {member.username}",
+            staff_approved = "",
+            supervisor_approved = "",
+            trader = "",
+            left_qty = (component.quantity - transfer_qty),
+            gr_qty = 0,
+            gi_qty = transfer_qty,
+            purpose_type = "Tooling Center",
+            purpose_detail = "Tooling Center",
+            component = component,
+            request_id = "N/A",
+            serial_numbers = serial_numbers,
+            scrap_qty = 0,
+            scrap_serial_numbers = "N/A"
+        )
+        component.quantity = component.quantity - transfer_qty
+        component.save()
+
+        if not component.unique_component:
+            serial_numbers_obj.delete()
+
+        tooling_obj, created = Tooling.objects.get_or_create(
+            component=component,
+            defaults={"quantity_amount": transfer_qty, "quantity_available": transfer_qty}  # Initial values if new
+        )
+
+        if not created:  # If object already exists, update the values
+            tooling_obj.quantity_amount = tooling_obj.quantity_amount + transfer_qty
+            tooling_obj.quantity_available = tooling_obj.quantity_available + transfer_qty
+            tooling_obj.save(update_fields=["quantity_amount", "quantity_available"])
+
+
+        serializer = ComponentSerializer(instance = component)
+
+        return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
