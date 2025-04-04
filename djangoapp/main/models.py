@@ -213,6 +213,7 @@ class Tooling(models.Model):
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
     quantity_amount = models.IntegerField()
     quantity_available = models.IntegerField()
+    location = models.ForeignKey(Location,  on_delete=models.SET_NULL, blank=True, null=True)
     borrower = models.ManyToManyField(Member, through='BorrowerRelation')
 
     def __str__(self):
