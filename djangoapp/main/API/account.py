@@ -12,7 +12,6 @@ from rest_framework.permissions import IsAuthenticated
 from ..models import *
 from ..serializers import *
 
-
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -26,7 +25,32 @@ def get_account(request):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_account_in_production_area(request):
+    try:
+        query_serializer = ProdAreaNameQuerySerializer(data = request.query_params)
 
+        if query_serializer.is_valid():
+            production_area_name = query_serializer.validated_data.get('production_area_name')
+
+            members = Member.objects.filter(production_area__prod_area_name = production_area_name).exclude(pk = 1).order_by('name')
+
+            if not members.exists():
+                return Response({"detail": "This production area id not found any members.", "data": []}, status=status.HTTP_204_NO_CONTENT)
+
+            member_serializer = MemberSerializer(instance=members, many=True)
+
+            return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
+            
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])

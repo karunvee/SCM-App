@@ -806,7 +806,7 @@ def tool_list(request):
             for t in serializers.data:
                 for bw in t['borrower']:
                     borrowerRel = BorrowerRelation.objects.filter(member__username = bw['username'], tooling__component__name = t['component']['name']).first()
-                    bw['borrowed_permanent'] = borrowerRel.borrowed_permanent
+                    bw['borrowed_permanent'] = borrowerRel.permanent_borrowing
 
             return Response({"detail": "success", "data": serializers.data}, status=status.HTTP_200_OK)
         
@@ -875,5 +875,85 @@ def add_tool(request):
         serializer = ComponentSerializer(instance = component)
 
         return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def trade_tool(request):
+    try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+        year_expired_date = now - timedelta(days = 2000)
+
+        borrower_emp_id = request.data.get('borrower_emp_id')
+        trader_emp_id = request.data.get('trader_emp_id')
+        permanent_borrowing = request.data.get('permanent_borrowing')
+        tooling_id = request.data.get('tooling_id')
+        mode = request.data.get('mode').capitalize()
+
+        borrower = get_object_or_404(Member, emp_id = borrower_emp_id)
+        trader = get_object_or_404(Member, emp_id = trader_emp_id)
+        tooling = get_object_or_404(Tooling, pk = tooling_id)
+
+        if mode == 'Borrow':
+            BorrowerRelation.objects.create(
+                member = borrower,
+                tooling = tooling,
+                permanent_borrowing = permanent_borrowing,
+            ).save()
+            tooling.quantity_available = tooling.quantity_available - 1
+            tooling.save()
+        elif mode == 'Return':
+            BorrowerRelation.objects.filter(
+                member = borrower,
+                tooling = tooling,
+            ).delete()
+            tooling.quantity_available = tooling.quantity_available + 1
+            tooling.save()
+        else:
+            return Response({f"detail": "This mode not found {mode}"}, status=status.HTTP_404_NOT_FOUND)
+
+
+        his_created = HistoryToolTrading.objects.create(
+            topic = mode,
+            borrower = f'{borrower.emp_id}, {borrower.name}',
+            trader = f'{trader.emp_id}, {trader.name}',
+            tooling = tooling
+        ).save()
+        serializers = HistoryToolTradingSerializer(instance = his_created)
+
+        HistoryToolTrading.objects.filter(issue_date__lte = year_expired_date).delete()
+
+        return Response({"detail": f"{mode} {tooling.component.name} successfully", "data": serializers.data}, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        print(str(e))
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def tooling_history(request):
+    try:
+        query_serializer = ProdAreaNameQuerySerializer(data = request.query_params)
+
+        if query_serializer.is_valid():
+            production_area_name = query_serializer.validated_data.get('production_area_name')
+
+            histories = HistoryToolTrading.objects.filter(tooling__component__location__production_area__prod_area_name = production_area_name).order_by('-issue_date')
+
+            if not histories.exists():
+                return Response({"detail": "This production area id not found any histories.", "data": []}, status=status.HTTP_204_NO_CONTENT)
+
+            history_serializer = HistoryToolTradingSerializer(instance=histories, many=True)
+
+            return Response({"detail": "success", "data": history_serializer.data}, status=status.HTTP_200_OK)
+            
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+        
+
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

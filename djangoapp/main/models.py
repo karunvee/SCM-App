@@ -222,7 +222,7 @@ class Tooling(models.Model):
 class BorrowerRelation(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
     tooling = models.ForeignKey(Tooling, on_delete=models.CASCADE)
-    borrowed_permanent = models.BooleanField(default= False)
+    permanent_borrowing = models.BooleanField(default= False)
     borrowed_date = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
@@ -349,6 +349,22 @@ class HistoryTrading(models.Model):
 
     def __str__(self):
         return f"{self.requester}, id: {self.pk}, {self.issue_date}"
+    
+
+class HistoryToolTrading(models.Model):
+    MODE = (('Borrow', 'Borrow'), ('Return', 'Return'))
+
+    topic = models.CharField(max_length = 255, choices=MODE, default=MODE[0][0])
+    borrower = models.CharField(max_length = 100)
+    trader = models.CharField(max_length = 100)
+
+    tooling = models.ForeignKey(Tooling, on_delete=models.CASCADE)
+
+    issue_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.tooling}, {self.issue_date}"
+
 
 class InventoryReport(models.Model):
     STATUS = (('Abnormal', 'Abnormal'), ('Normal', 'Normal'))

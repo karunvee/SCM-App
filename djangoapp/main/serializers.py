@@ -214,6 +214,11 @@ class ToolingSerializer(serializers.ModelSerializer):
         model = Tooling
         fields = '__all__'
 
+class HistoryToolTradingSerializer(serializers.ModelSerializer):
+    tooling = ToolingSerializer()
+    class Meta(object):
+        model = HistoryToolTrading
+        fields = '__all__'
 
 # Params
 class ComponentProdNameQuerySerializer(serializers.Serializer):

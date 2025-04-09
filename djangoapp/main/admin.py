@@ -202,11 +202,11 @@ class CarbonCopyRouteInline(admin.TabularInline):  # Use 'StackedInline' for a d
 
 class BorrowerRelationAdmin(admin.ModelAdmin):
     search_fields = ['tooling__component__name', "member__username", "member__name", "member__emp_id"]
-    list_filter = ['borrowed_permanent']
+    list_filter = ['permanent_borrowing']
     list_display = (
         'member',
         'tooling',
-        'borrowed_permanent',
+        'permanent_borrowing',
         'borrowed_date',
                     )
 admin.site.register(BorrowerRelation, BorrowerRelationAdmin)
@@ -265,6 +265,19 @@ class HistoryTradingAdmin(admin.ModelAdmin):
     
     list_filter = ['component__component_type', 'component__department']
 admin.site.register(HistoryTrading, HistoryTradingAdmin)
+
+
+class HistoryToolTradingAdmin(admin.ModelAdmin):
+    search_fields = ['trader', 'tooling__component__name', 'tooling__component__model']
+    list_display = (
+        'issue_date',
+        'topic',
+        'borrower', 'trader',
+        'tooling',
+                    )
+    
+    list_filter = ['tooling__component__component_type']
+admin.site.register(HistoryToolTrading, HistoryToolTradingAdmin)
 
 class OrderTackingAdmin(admin.ModelAdmin):
     search_fields = ['po__po_number', 'order__id']

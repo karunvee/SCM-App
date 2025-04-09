@@ -24,6 +24,8 @@ urlpatterns = [
 
     path('tooling/list/', tool_list , name='tool_list'), 
     path('tooling/add/', add_tool , name='add_tool'), 
+    path('tooling/trade/', trade_tool , name='trade_tool'), 
+    path('tooling/history/', tooling_history, name='tooling_history'),
 
     path('component/info/cart/', component_cart , name='component_cart'),
     path('checkout/cart/', checkout_cart , name='checkout_cart'),
@@ -59,6 +61,7 @@ urlpatterns = [
     path('serial_number/list/', get_item , name='get_item'),
     
     path('account/list/', get_account , name='get_account'),
+    path('account/in_production_area/', get_account_in_production_area , name='get_account_in_production_area'),
     path('account/role/update/', set_account_role , name='set_account_role'),
     path('account/delete/', delete_account , name='delete_account'),
 
