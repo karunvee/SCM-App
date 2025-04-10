@@ -24,6 +24,7 @@ urlpatterns = [
 
     path('tooling/list/', tool_list , name='tool_list'), 
     path('tooling/add/', add_tool , name='add_tool'), 
+    path('tooling/location/update/', update_location_tool , name='update_location_tool'), 
     path('tooling/trade/', trade_tool , name='trade_tool'), 
     path('tooling/history/', tooling_history, name='tooling_history'),
 

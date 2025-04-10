@@ -19,7 +19,7 @@ class ComponentTypeSerializer(serializers.ModelSerializer):
 class LocationSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Location
-        fields = ['id', 'name', 'last_inventory_date']
+        fields = ['id', 'name', 'for_tooling', 'last_inventory_date']
 
 
 
@@ -209,6 +209,7 @@ class BorrowerRelationSerializer(serializers.ModelSerializer):
 
 class ToolingSerializer(serializers.ModelSerializer):
     component = ComponentWithoutSerialsSerializer()
+    location = LocationSerializer()
     borrower = MemberSerializer(many=True)
     class Meta(object):
         model = Tooling

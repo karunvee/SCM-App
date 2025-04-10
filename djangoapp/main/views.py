@@ -186,6 +186,7 @@ def add_location(request):
     try:
         location_name = request.data.get('name')
         prod_area_name = request.data.get('prod_area_name')
+        for_tooling = request.data.get('for_tooling')
         id = request.data.get('id')
 
         print(f"{request.method}, {location_name}, {prod_area_name}, {id}")
@@ -195,6 +196,7 @@ def add_location(request):
         if request.method == 'POST':
             Location.objects.create(
                 name = location_name,
+                for_tooling = for_tooling,
                 production_area = get_object_or_404(ProductionArea, prod_area_name = prod_area_name)
             )
         elif request.method == 'PUT':

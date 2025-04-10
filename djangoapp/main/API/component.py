@@ -878,6 +878,23 @@ def add_tool(request):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def update_location_tool(request):
+    try:
+        tooling_id = request.data.get('tooling_id')
+        location_name = request.data.get('location_name')
+
+        tooling = get_object_or_404(Tooling, pk = tooling_id)
+        location = get_object_or_404(Location, name = location_name)
+        tooling.location = location
+        tooling.save()
+
+        return Response({"detail": f"Location of {tooling.component.name} is updated to {location} successfully."}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
 
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -929,7 +946,6 @@ def trade_tool(request):
         return Response({"detail": f"{mode} {tooling.component.name} successfully", "data": serializers.data}, status=status.HTTP_200_OK)
     
     except Exception as e:
-        print(str(e))
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])

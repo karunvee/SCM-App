@@ -64,6 +64,7 @@ class LocationAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'production_area',
+        'for_tooling',
         'pk',
                     )
 admin.site.register(Location, LocationAdmin)

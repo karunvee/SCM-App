@@ -110,6 +110,7 @@ class Department(models.Model):
 class Location(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length = 250)
+    for_tooling = models.BooleanField(default=False)
     last_inventory_date = models.DateTimeField(default=timezone.now)
     def __str__(self):
         return self.name
