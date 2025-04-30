@@ -17,7 +17,7 @@ from ..serializers import *
 @permission_classes([IsAuthenticated])
 def get_account(request):
     try:
-        members = Member.objects.all().exclude(pk = 1).order_by('-date_joined')
+        members = Member.objects.all().exclude(is_superuser=True).order_by('-date_joined')
         member_serializer = MemberSerializer(instance=members, many=True)
 
         return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
@@ -35,7 +35,7 @@ def get_account_in_production_area(request):
         if query_serializer.is_valid():
             production_area_name = query_serializer.validated_data.get('production_area_name')
 
-            members = Member.objects.filter(production_area__prod_area_name = production_area_name).exclude(pk = 1).order_by('name')
+            members = Member.objects.filter(production_area__prod_area_name = production_area_name).exclude(is_superuser=True).order_by('name')
 
             if not members.exists():
                 return Response({"detail": "This production area id not found any members.", "data": []}, status=status.HTTP_204_NO_CONTENT)
@@ -82,11 +82,12 @@ def set_account_role(request):
                 is_staff = index.get('is_staff'),
                 is_supervisor = index.get('is_supervisor'),
                 is_center = index.get('is_center'),
+                member_role = index.get('member_role'),
                 production_area = pdAreaObj
                 )
 
 
-        members = Member.objects.all().exclude(pk=1)
+        members = Member.objects.all().exclude(is_superuser=True)
         member_serializer = MemberSerializer(instance=members, many=True)
         return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
 
