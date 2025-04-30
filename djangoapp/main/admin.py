@@ -174,8 +174,8 @@ class MemberAdmin(admin.ModelAdmin):
                     )
     fieldsets = (
         (None, {'fields': ('username', 'date_joined', 'production_area')}),
-        ('Permission', {'fields': ( 'is_staff', 'is_user', 'is_supervisor', 'is_superuser')}),
-        ('Personal', {'fields': ( 'name', 'emp_id', 'email', )})
+        ('Permission', {'fields': ( 'member_role', 'is_staff', 'is_user', 'is_supervisor', 'is_superuser')}),
+        ('Detail', {'fields': ( 'name', 'emp_id', 'email', )})
     )
 
     add_fieldsets = (
