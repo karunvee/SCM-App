@@ -163,7 +163,7 @@ class Component(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE)
 
     last_inventory_date = models.DateTimeField(default=timezone.now)
-    next_inventory_date = models.DateTimeField(default=timezone.now)
+    next_inventunory_date = models.DateTimeField(default=timezone.now)
     missing_list = models.TextField(blank = True, null=True) 
 
     mro_pn =  models.CharField(max_length = 12, blank=True)

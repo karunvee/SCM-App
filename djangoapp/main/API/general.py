@@ -23,9 +23,8 @@ from ..serializers import *
 def add_po(request):
     try:
         now = datetime.now(pytz.timezone('Asia/Bangkok'))
-        year_expired_date = now - timedelta(days = 400)
-
-        PO.objects.filter(issue_date__lte = year_expired_date).delete() 
+        # year_expired_date = now - timedelta(days= 36500)
+        # PO.objects.filter(issue_date__lte = year_expired_date).delete() 
 
         po_number = request.data.get('po_number')
         prod_area_name = request.data.get('prod_area_name')
