@@ -295,14 +295,13 @@ class OrderTackingAdmin(admin.ModelAdmin):
 admin.site.register(OrderTacking, OrderTackingAdmin)
 
 class RequestComponentRelationAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'requester__username', 'requester__name', 'requester__emp_id']
+    search_fields = ['id', 'request__requester__username', 'request__requester__name', 'request__requester__emp_id', 'component__name', 'component__model']
     list_display = (
         'id',
         'request',
         'component',
         'qty',
                     )
-    list_filter = ['component__department']
 admin.site.register(RequestComponentRelation, RequestComponentRelationAdmin)
 
 
