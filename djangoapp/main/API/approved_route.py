@@ -172,7 +172,7 @@ def approved_order(request):
                         requestData.delete()
 
             elif method == 'success':
-                sn_list = [item['sn'] for item in serial_numbers if not item['unique_component']]
+                sn_list = [item['sn'] for item in serial_numbers if not item['unique_component'] ] 
                 SerialNumber.objects.filter(serial_number__in = sn_list).update(request = requestData)
                 request_obj.update(complete_date = now)
                 if not requestData.update_status_to_next():
@@ -337,6 +337,8 @@ def check_in(request):
                     'component_id' : reqRelIndex.component.pk,
                     'component_name' : reqRelIndex.component.name,
                     'component_model' : reqRelIndex.component.model,
+                    'component_unique' : reqRelIndex.component.unique_component,
+                    'component_last_sn' : reqRelIndex.component.last_sn,
                     'component_machine_type' : reqRelIndex.component.machine_type.name,
                     'component_component_type' : reqRelIndex.component.component_type.name,
                     'component_image' : reqRelIndex.component.image_url,
@@ -454,6 +456,7 @@ def pick_up(request):
 
             history_items.append(HistoryTrading(
                     requester = request_name,
+                    request_date=request_obj.issue_date,
                     staff_approved = request_obj.staff_approved.username,
                     supervisor_approved = request_obj.supervisor_approved.username,
                     trader = emp_name,
@@ -464,7 +467,7 @@ def pick_up(request):
                     purpose_detail=request_obj.purpose_detail,
                     component=cr.component,
                     request_id = request_obj.id,
-                    serial_numbers = serial_numbers,
+                    serial_numbers = ''.join(('"',cr.component.last_sn,'"')) if cr.component.unique_component else serial_numbers,
                     scrap_qty = len(scrap_list),
                     scrap_serial_numbers = scrap_list,
                 )) 
@@ -552,6 +555,7 @@ def set_self_pick_up(request):
             history_items.append(
                 HistoryTrading(
                     requester=request_name,
+                    request_date=request_obj.issue_date,
                     staff_approved=request_obj.staff_approved.username,
                     supervisor_approved=request_obj.supervisor_approved.username,
                     trader=emp_name,

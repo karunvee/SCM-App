@@ -237,6 +237,7 @@ class ApprovedRouteAdmin(admin.ModelAdmin):
         'staff_route',
         'supervisor_route',
         'production_area',
+        'approve_route',
                     )
     def get_cc_members(self, obj):
         return ', '.join([cc_member.member.email for cc_member in obj.carbon_copy_route.all()])

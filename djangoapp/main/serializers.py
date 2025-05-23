@@ -188,6 +188,7 @@ class ApprovedRouteSerializer(serializers.ModelSerializer):
     staff_route_second = MemberSerializer()
     supervisor_route = MemberSerializer()
     supervisor_route_second = MemberSerializer()
+    approve_route = MemberSerializer()
     production_area = ProductionAreaSerializer()
     class Meta(object):
         model = ApprovedRoute

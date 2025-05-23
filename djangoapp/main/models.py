@@ -88,11 +88,14 @@ class Member(AbstractBaseUser, PermissionsMixin):
         return "%s,%s" % (self.emp_id, self.name)
 
 class ApprovedRoute(models.Model):
+    production_area = models.OneToOneField(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
+
     staff_route = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_route')
     staff_route_second  = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='staff_route_second',blank=True, null=True)
     supervisor_route = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_route')
     supervisor_route_second  = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='supervisor_route_second',blank=True, null=True)
-    production_area = models.OneToOneField(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
+
+    approve_route = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='approve_route',blank=True, null=True)
 
     def __str__(self):
         return self.production_area.prod_area_name
@@ -163,7 +166,7 @@ class Component(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE)
 
     last_inventory_date = models.DateTimeField(default=timezone.now)
-    next_inventunory_date = models.DateTimeField(default=timezone.now)
+    next_inventory_date = models.DateTimeField(default=timezone.now)
     missing_list = models.TextField(blank = True, null=True) 
 
     mro_pn =  models.CharField(max_length = 12, blank=True)
@@ -350,6 +353,7 @@ class HistoryTrading(models.Model):
     scrap_serial_numbers = models.TextField(default='')
 
     issue_date = models.DateTimeField(auto_now_add=True)
+    request_date = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"{self.requester}, id: {self.pk}, {self.issue_date}"
