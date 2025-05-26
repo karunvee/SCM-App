@@ -64,6 +64,7 @@ urlpatterns = [
     path('account/list/', get_account , name='get_account'),
     path('account/in_production_area/', get_account_in_production_area , name='get_account_in_production_area'),
     path('account/role/update/', set_account_role , name='set_account_role'),
+    path('account/create/', create_account , name='create_account'),
     path('account/delete/', delete_account , name='delete_account'),
 
 

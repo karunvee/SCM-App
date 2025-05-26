@@ -75,6 +75,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
     is_supervisor = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     is_center = models.BooleanField(default=False)
+    is_local = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
     ROLES = (('NONE', 'NONE'), ('AME', 'AME'), ('TE', 'TE'), ('PRODUCTION', 'PRODUCTION'), ('IE', 'IE'))

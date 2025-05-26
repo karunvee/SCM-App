@@ -166,6 +166,7 @@ class MemberAdmin(admin.ModelAdmin):
         'email',
         'production_area',
         'department',
+        'is_local',
         'is_user',
         'is_staff',
         'is_supervisor',
@@ -174,7 +175,7 @@ class MemberAdmin(admin.ModelAdmin):
                     )
     fieldsets = (
         (None, {'fields': ('username', 'date_joined', 'production_area')}),
-        ('Permission', {'fields': ( 'member_role', 'is_staff', 'is_user', 'is_supervisor', 'is_superuser')}),
+        ('Permission', {'fields': ( 'member_role', 'is_staff', 'is_user', 'is_supervisor', 'is_superuser', 'is_center', 'is_local')}),
         ('Detail', {'fields': ( 'name', 'emp_id', 'email', )})
     )
 

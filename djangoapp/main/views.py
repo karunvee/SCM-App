@@ -93,6 +93,9 @@ def login_user(request):
             if user.is_superuser:
                 if not user.check_password(password):
                     return Response({"detail": "username or password is incorrect."}, status=status.HTTP_404_NOT_FOUND)
+            elif user.is_local:
+                if not user.check_password(password):
+                    return Response({"detail": "username or password is incorrect."}, status=status.HTTP_404_NOT_FOUND)
             else:
                 e_code, e_msg, valid = validate_credentials(username, ad_server, password)
                 if not valid:

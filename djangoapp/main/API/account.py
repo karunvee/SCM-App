@@ -8,7 +8,6 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
-
 from ..models import *
 from ..serializers import *
 
@@ -93,6 +92,45 @@ def set_account_role(request):
 
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST', 'PUT'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def create_account(request):
+    try:
+        name = request.data.get('name')
+        username = request.data.get('username')
+        emp_id = request.data.get('emp_id')
+        department = request.data.get('department')
+        role = request.data.get('role')
+        permission = request.data.get('permission')
+        email = request.data.get('email')
+        prod_area_name = request.data.get('prod_area_name')
+        password = request.data.get('password')
+        prod_area = ProductionArea.objects.filter(prod_area_name=prod_area_name).first()
+
+        obj, created = Member.objects.update_or_create(
+            emp_id=emp_id,
+            username=username,
+            defaults={ 
+                'name':name,
+                'department':department,
+                'member_role':role,
+                'email':email,
+                'production_area': prod_area,
+                'is_user': True,
+                'is_staff': True if permission == "STAFF" else False,
+                'is_local': True
+            }
+        )
+        if created:
+            obj.set_password(password)  # Replace with a secure password
+            obj.save()
+        member_serializer = MemberSerializer(instance=obj)
+        return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(str(e))
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['DELETE'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
