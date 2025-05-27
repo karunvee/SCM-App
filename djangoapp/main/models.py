@@ -68,7 +68,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     cost_center = models.ForeignKey(CostCenter, on_delete=models.CASCADE, blank=True, null=True)
 
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
 
     is_user = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -276,6 +276,7 @@ class Request(models.Model):
     prepare_by = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='prepare_by', blank=True, null=True)
 
     status =  models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])
+    pickup_status =  models.BooleanField(default= False)
     rejected = models.BooleanField(default= False)
     self_pickup = models.BooleanField(default= False)
 

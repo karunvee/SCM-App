@@ -172,11 +172,18 @@ def approved_order(request):
                         requestData.delete()
 
             elif method == 'success':
+                r_status = requestData.get_status_index()
+
                 sn_list = [item['sn'] for item in serial_numbers if not item['unique_component'] ] 
                 SerialNumber.objects.filter(serial_number__in = sn_list).update(request = requestData)
-                request_obj.update(complete_date = now)
-                if not requestData.update_status_to_next():
-                    return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
+                requestData = request_obj.get()
+                requestData.complete_date = now
+                requestData.pickup_status = True
+                requestData.save()
+
+                if r_status >= 2:
+                    if not requestData.update_status_to_next():
+                        return Response({"detail": "Cannot update status"}, status=status.HTTP_400_BAD_REQUEST)
                 
             elif method == 'reject':
                 request_obj.update(rejected = True)
@@ -321,8 +328,9 @@ def check_in(request):
 
     if query_serializer.is_valid():
         request_id = query_serializer.validated_data.get('request_id')
-        requests = Request.objects.filter(id = request_id, status__in = ['Success', 'Manager', 'Preparing'])
+        requests = Request.objects.filter(id = request_id)
         if not requests.exists():
+            print(request_id)
             return Response({"detail": "This Request not found"}, status=status.HTTP_404_NOT_FOUND)
         
         requests_serializer = RequestSerializer(instance = requests, many=True)
