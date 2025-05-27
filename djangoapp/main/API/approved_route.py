@@ -339,7 +339,9 @@ def check_in(request):
             req['components'] = []
             for reqRelIndex in reqRel:
                 serial_numbers = SerialNumber.objects.filter(request__id = req['id'], component__pk = reqRelIndex.component.pk)
+                serial_numbers_inhouse = SerialNumber.objects.filter(component__pk = reqRelIndex.component.pk)
                 serializers_serial_numbers = SerialNumberSerializer(instance=serial_numbers, many=True)
+                serializers_serial_numbers_inhouse = SerialNumberSerializer(instance=serial_numbers_inhouse, many=True)
                 req['components'].append({
                     'id': reqRelIndex.id,
                     'component_id' : reqRelIndex.component.pk,
@@ -353,6 +355,7 @@ def check_in(request):
                     'location' : reqRelIndex.component.location.name,
                     'qty' : reqRelIndex.qty,
                     'serial_numbers': serializers_serial_numbers.data,
+                    'serial_numbers_inhouse': serializers_serial_numbers_inhouse.data,
                 })
 
         return Response({"detail": "success", "data": requests_serializer.data}, status=status.HTTP_200_OK)
