@@ -70,6 +70,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(unique=True, blank=True, null=True)
 
+    is_administrator = models.BooleanField(default=False)
     is_user = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_supervisor = models.BooleanField(default=False)

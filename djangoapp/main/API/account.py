@@ -1,6 +1,6 @@
 import json
 from django.shortcuts import render, redirect, get_object_or_404
-
+from django.db.models import Q
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework import status
@@ -16,11 +16,22 @@ from ..serializers import *
 @permission_classes([IsAuthenticated])
 def get_account(request):
     try:
-        members = Member.objects.all().exclude(is_superuser=True).order_by('-date_joined')
-        member_serializer = MemberSerializer(instance=members, many=True)
+        query_serializer = EmployeeIdQuerySerializer(data = request.query_params)
 
-        return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
+        if query_serializer.is_valid():
+            emp_id = query_serializer.validated_data.get('emp_id')
+            member_req = get_object_or_404(Member, emp_id = emp_id)
 
+            if member_req.is_administrator:
+                members = Member.objects.all().exclude(is_superuser=True).order_by('-date_joined')
+            else:
+                members = Member.objects.filter(Q(production_area=member_req.production_area) | Q(production_area__isnull=True)).exclude(is_superuser=True).order_by('-date_joined')
+
+            member_serializer = MemberSerializer(instance=members, many=True)
+            return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
