@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Exists, OuterRef
 from datetime import datetime, timedelta
 import time
-
+from django.db.models import Q
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework import status
@@ -25,21 +25,34 @@ from .mail import *
 def get_approved_route(request):
     try:
         if request.method == 'GET':
-            approvedRoute = ApprovedRoute.objects.all()
-            serializer = ApprovedRouteSerializer(instance=approvedRoute, many=True)
-            return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
-        
+            query_serializer = EmployeeIdQuerySerializer(data = request.query_params)
+            if query_serializer.is_valid():
+                emp_id = query_serializer.validated_data.get('emp_id')
+                member_req = get_object_or_404(Member, emp_id = emp_id)
+
+                if member_req.is_administrator:
+                    approvedRoute = ApprovedRoute.objects.all()
+                else:
+                    approvedRoute = ApprovedRoute.objects.filter(production_area=member_req.production_area)
+
+                serializer = ApprovedRouteSerializer(instance=approvedRoute, many=True)
+                return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            
+            return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+
         elif request.method == 'PUT':
             query_serializer = ApprovedRouteIdUpdateQuerySerializer(data = request.query_params)
             if query_serializer.is_valid():
                 route_id = query_serializer.validated_data.get('route_id')
                 staff_id = query_serializer.validated_data.get('staff_id')
+                supervisor_id = query_serializer.validated_data.get('supervisor_id')
                 manager_id = query_serializer.validated_data.get('manager_id')
 
-                staff_route = get_object_or_404(Member, pk = staff_id)
-                supervisor_route = get_object_or_404(Member, pk = manager_id)
+                staff = get_object_or_404(Member, pk = staff_id)
+                supervisor = get_object_or_404(Member, pk = supervisor_id)
+                manager = get_object_or_404(Member, pk = manager_id)
 
-                ApprovedRoute.objects.filter(pk = route_id).update(staff_route = staff_route, supervisor_route = supervisor_route)
+                ApprovedRoute.objects.filter(pk = route_id).update(staff_route = staff, supervisor_route = supervisor, approve_route = manager)
                 return Response({"detail": "success"}, status=status.HTTP_200_OK)
             
             return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
@@ -49,6 +62,7 @@ def get_approved_route(request):
             description = request.data.get('description')
             detail = request.data.get('detail')
             staff_id = request.data.get('staff_id')
+            supervisor_id = request.data.get('supervisor_id')
             manager_id = request.data.get('manager_id')
             print(area_name, description, detail)
             prdArea = ProductionArea.objects.create(
@@ -60,7 +74,8 @@ def get_approved_route(request):
             ApprovedRoute.objects.create(
                 production_area = prdArea,
                 staff_route = Member.objects.get(pk = staff_id),
-                supervisor_route = Member.objects.get(pk = manager_id)
+                supervisor_route = Member.objects.get(pk = supervisor_id),
+                approve_route = Member.objects.get(pk = manager_id)
             )
             return Response({"detail": "success"}, status=status.HTTP_200_OK)
 

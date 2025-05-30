@@ -249,6 +249,7 @@ class ApprovedRouteIdQuerySerializer(serializers.Serializer):
 class ApprovedRouteIdUpdateQuerySerializer(serializers.Serializer):
     route_id = serializers.CharField()
     staff_id = serializers.CharField()
+    supervisor_id = serializers.CharField()
     manager_id = serializers.CharField()
 
 class GenerateSerialNumberQuerySerializer(serializers.Serializer):
