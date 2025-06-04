@@ -79,7 +79,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
     is_local = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
-    ROLES = (('NONE', 'NONE'), ('AME', 'AME'), ('TE', 'TE'), ('PRODUCTION', 'PRODUCTION'), ('IE', 'IE'))
+    ROLES = (('NONE', 'NONE'), ('AE', 'AE'), ('ME', 'ME'), ('TE', 'TE'), ('PRODUCTION', 'PRODUCTION'), ('IE', 'IE'), ('AME', 'AME'))
     member_role = models.CharField(max_length = 255, choices=ROLES, default=ROLES[0][0])
 
     objects = CustomUserManager()

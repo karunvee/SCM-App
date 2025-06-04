@@ -94,6 +94,22 @@ def get_approved_route(request):
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_your_approved_route(request):
+    try:
+        query_serializer = ComponentProdNameQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            production_name = query_serializer.validated_data.get('production_name')
+            approvedRoute = get_object_or_404(ApprovedRoute, production_area__prod_area_name=production_name)
+            serializer = ApprovedRouteSerializer(instance=approvedRoute)
+            return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])

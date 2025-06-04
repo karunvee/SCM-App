@@ -9,6 +9,7 @@ urlpatterns = [
 
     path('account/pd/area/', get_production_area , name='get_production_area'),
     path('approved/route/info/', get_approved_route , name='get_approved_route'),    
+    path('approved/your/route/', get_your_approved_route , name='get_your_approved_route'),    
 
     path('basic_info/list/<str:pda>/', basic_info , name='basic_info'),
     path('machine_type/list/<str:pda>/', get_machine_type , name='get_machine_type'),
