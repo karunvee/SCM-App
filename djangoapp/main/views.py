@@ -38,6 +38,7 @@ def login_user(request):
         ad_server = request.data.get('ad_server')
 
         print(username, password, ad_server)
+        # New Create
         if not Member.objects.filter(username = username).exists():
 
             try:
@@ -80,14 +81,14 @@ def login_user(request):
                         token, create = Token.objects.get_or_create(user=new_member)
                         
                         serializer = MemberSerializer(new_member)
-                        return Response({"detail": "success", "token": token.key, "data": serializer.data}, status=status.HTTP_201_CREATED)
+                        return Response({"detail": "success", "token": token.key, "data": serializer.data, "route_data": None}, status=status.HTTP_201_CREATED)
                 else:
                     return Response({"detail": "Failure, This user not found in Active Directory"}, status=status.HTTP_404_NOT_FOUND)
                 
             except Exception as e:
                 print(e)
                 return Response({"detail": "Credentials are invalid. please check your username or password."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        # User exist
         else:
             user = get_object_or_404(Member, username= username)
             if user.is_superuser:
@@ -101,8 +102,11 @@ def login_user(request):
                 if not valid:
                     return Response({"detail": "Credentials are invalid. please check your username or password."}, status=status.HTTP_409_CONFLICT)
             token, create = Token.objects.get_or_create(user=user)
+            approvedRoute = get_object_or_404(ApprovedRoute, production_area__prod_area_name=user.production_area.prod_area_name)
+            serializer_route = ApprovedRouteSerializer(instance=approvedRoute)
+
             serializer = MemberSerializer(instance=user)
-            return Response({"detail": "success", "token": token.key, "data": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"detail": "success", "token": token.key, "data": serializer.data, "route_data": serializer_route.data}, status=status.HTTP_200_OK)
             
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
