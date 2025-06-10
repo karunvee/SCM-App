@@ -109,6 +109,7 @@ def set_account_role(request):
 @permission_classes([IsAuthenticated])
 def create_account(request):
     try:
+        image = request.data.get('image')
         name = request.data.get('name')
         username = request.data.get('username')
         emp_id = request.data.get('emp_id')
@@ -124,6 +125,7 @@ def create_account(request):
             emp_id=emp_id,
             username=username,
             defaults={ 
+                'image':image,
                 'name':name,
                 'department':department,
                 'member_role':role,
@@ -137,6 +139,10 @@ def create_account(request):
         if created:
             obj.set_password(password)  # Replace with a secure password
             obj.save()
+        else:
+            obj.is_local = False
+            obj.save()
+
         member_serializer = MemberSerializer(instance=obj)
         return Response({"detail": "success", "data": member_serializer.data}, status=status.HTTP_200_OK)
     except Exception as e:

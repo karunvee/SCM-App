@@ -5,6 +5,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 import uuid
 import random
 import string
+import os
 
 # Create your models here.
 def generate_unique_id():
@@ -61,6 +62,8 @@ class CostCenter(models.Model):
         return f'{self.name}, {self.cost_center_number}'
     
 class Member(AbstractBaseUser, PermissionsMixin):
+    image = models.ImageField(upload_to='person_picture/', blank=True)
+
     emp_id = models.CharField(unique=True, max_length = 10)
     username = models.CharField(unique=True,max_length = 100)
     name = models.CharField(max_length = 200)
@@ -85,6 +88,32 @@ class Member(AbstractBaseUser, PermissionsMixin):
     objects = CustomUserManager()
     USERNAME_FIELD = 'username'  # Use name for authentication
     REQUIRED_FIELDS = ['email']
+
+    def save(self, *args, **kwargs):
+        try:
+            # Check if the instance already exists in the database
+            existing = Member.objects.get(id=self.id)
+            if existing.image and self.image and existing.image != self.image:
+                # Delete the old image file
+                if os.path.isfile(existing.image.path):
+                    os.remove(existing.image.path)
+        except Member.DoesNotExist:
+            # New object, no action needed
+            pass
+
+        super(Member, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.image and os.path.isfile(self.image.path):
+            os.remove(self.image.path)
+        super(Member, self).delete(*args, **kwargs)
+
+    @property
+    def image_url(self):
+        if self.image:
+            return self.image.url
+        else:
+            return ''
 
     def __str__(self):
         return "%s,%s" % (self.emp_id, self.name)
@@ -178,6 +207,25 @@ class Component(models.Model):
 
     equipment_type = models.ManyToManyField(EquipmentType, through='EquipmentTypeRelation')
     machine_type = models.ManyToManyField(MachineType, through='MachineTypeRelation')
+
+    def save(self, *args, **kwargs):
+        try:
+            # Check if the instance already exists in the database
+            existing = Component.objects.get(id=self.id)
+            if existing.image and self.image and existing.image != self.image:
+                # Delete the old image file
+                if os.path.isfile(existing.image.path):
+                    os.remove(existing.image.path)
+        except Component.DoesNotExist:
+            # New object, no action needed
+            pass
+
+        super(Component, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.image and os.path.isfile(self.image.path):
+            os.remove(self.image.path)
+        super(Component, self).delete(*args, **kwargs)
 
     @property
     def image_url(self):
