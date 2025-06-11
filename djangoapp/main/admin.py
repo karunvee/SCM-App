@@ -336,3 +336,26 @@ class InventoryReportAdmin(admin.ModelAdmin):
                     )
     list_filter = ['status']
 admin.site.register(InventoryReport, InventoryReportAdmin)
+
+
+
+class ShiftDutyRelativeAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'member__username', 'member__name', 'member__emp_id']
+    list_display = (
+        'id',
+        'member',
+                    )
+admin.site.register(ShiftDutyRelative, ShiftDutyRelativeAdmin)
+
+
+class ShiftDutyAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'production_area__prod_area_name']
+    list_filter = ['shift']
+
+    list_display = (
+        'id',
+        'production_area',
+        'period_start',
+        'period_end'
+                    )
+admin.site.register(ShiftDuty, ShiftDutyAdmin)

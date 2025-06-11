@@ -6,6 +6,7 @@ import uuid
 import random
 import string
 import os
+from datetime import datetime, timedelta
 
 # Create your models here.
 def generate_unique_id():
@@ -72,6 +73,8 @@ class Member(AbstractBaseUser, PermissionsMixin):
     cost_center = models.ForeignKey(CostCenter, on_delete=models.CASCADE, blank=True, null=True)
 
     email = models.EmailField(unique=True, blank=True, null=True)
+    tel = models.CharField(max_length = 12, blank=True, null=True)
+    lineId = models.CharField(max_length = 20, blank=True, null=True)
 
     is_administrator = models.BooleanField(default=False)
     is_user = models.BooleanField(default=True)
@@ -438,3 +441,27 @@ class InventoryReport(models.Model):
 
     def __str__(self):
         return f"{self.location.name}, {self.status}"
+    
+def one_week_later():
+    return timezone.now() + timedelta(days=7)
+
+class ShiftDuty(models.Model):
+    SHIFT = (('DAY', 'DAY'), ('NIGHT', 'NIGHT'))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
+    shift = models.CharField(max_length = 255, choices=SHIFT, default=SHIFT[0][0])
+    period_start = models.DateTimeField(default=timezone.now)
+    period_end = models.DateTimeField(default=one_week_later)
+
+    members = models.ManyToManyField(Member, through='ShiftDutyRelative')
+
+    def __str__(self):
+        return self.shift
+    
+class ShiftDutyRelative(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    shift_duty = models.ForeignKey(ShiftDuty, on_delete=models.CASCADE)
+    member = models.ForeignKey(Member, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.member.name}"
