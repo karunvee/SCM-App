@@ -385,3 +385,29 @@ def inventory_reset(request):
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def getCurrentDutyShift(request):
+    try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+
+        query_serializer = ComponentProdNameQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            production_name = query_serializer.validated_data.get('production_name')
+            dutyObj = ShiftDuty.objects.filter(
+                production_area__prod_area_name = production_name,
+                period_start__lte=now,
+                period_end__gte=now
+                )
+            if not dutyObj.exists():
+                return Response({"detail": "success", "data": []}, status=status.HTTP_204_NO_CONTENT)
+            
+            dutyObjRev = ShiftDutyRelative.objects.filter(shift_duty = dutyObj.first())
+            serializer = ShiftDutyRelativeSerializer(instance = dutyObjRev, many=True)
+            return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

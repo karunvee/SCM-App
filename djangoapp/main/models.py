@@ -74,7 +74,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(unique=True, blank=True, null=True)
     tel = models.CharField(max_length = 12, blank=True, null=True)
-    lineId = models.CharField(max_length = 20, blank=True, null=True)
+    line_id = models.CharField(max_length = 20, blank=True, null=True)
 
     is_administrator = models.BooleanField(default=False)
     is_user = models.BooleanField(default=True)
@@ -85,7 +85,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
     is_local = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
-    ROLES = (('NONE', 'NONE'), ('AE', 'AE'), ('ME', 'ME'), ('TE', 'TE'), ('PRODUCTION', 'PRODUCTION'), ('IE', 'IE'), ('AME', 'AME'))
+    ROLES = (('NONE', 'NONE'), ('User', 'User'), ('Fixture Staff', 'Fixture Staff'), ('Spare Part Staff', 'Spare Part Staff'), ('Modify Part Staff', 'Modify Part Staff'), ('Management Staff', 'Management Staff'), ('-', '-'))
     member_role = models.CharField(max_length = 255, choices=ROLES, default=ROLES[0][0])
 
     objects = CustomUserManager()
@@ -446,20 +446,21 @@ def one_week_later():
     return timezone.now() + timedelta(days=7)
 
 class ShiftDuty(models.Model):
-    SHIFT = (('DAY', 'DAY'), ('NIGHT', 'NIGHT'))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
-    shift = models.CharField(max_length = 255, choices=SHIFT, default=SHIFT[0][0])
     period_start = models.DateTimeField(default=timezone.now)
     period_end = models.DateTimeField(default=one_week_later)
 
     members = models.ManyToManyField(Member, through='ShiftDutyRelative')
 
     def __str__(self):
-        return self.shift
+        return self.production_area.prod_area_name
     
 class ShiftDutyRelative(models.Model):
+    SHIFT = (('DAY', 'DAY'), ('NIGHT', 'NIGHT'))
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    shift = models.CharField(max_length = 255, choices=SHIFT, default=SHIFT[0][0])
     shift_duty = models.ForeignKey(ShiftDuty, on_delete=models.CASCADE)
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
 

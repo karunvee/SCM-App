@@ -222,6 +222,19 @@ class HistoryToolTradingSerializer(serializers.ModelSerializer):
         model = HistoryToolTrading
         fields = '__all__'
 
+class ShiftDutySerializer(serializers.ModelSerializer):
+    production_area = ProductionArea()
+    class Meta(object):
+        model = ShiftDuty
+        fields = '__all__'
+
+class ShiftDutyRelativeSerializer(serializers.ModelSerializer):
+    shift_duty = ShiftDutySerializer()
+    member = MemberSerializer()
+    class Meta(object):
+        model = ShiftDutyRelative
+        fields = '__all__'
+
 # Params
 class ComponentProdNameQuerySerializer(serializers.Serializer):
     production_name = serializers.CharField()

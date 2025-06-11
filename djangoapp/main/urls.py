@@ -102,4 +102,7 @@ urlpatterns = [
     path('data/machinery_summary/machine_type/<str:prod_area_name>/', data_machine_type_summary, name='data_machine_type_summary'),
 
     path('data/auto_align_safety_stock/<str:prod_area_name>/', auto_align_safety_stock, name='auto_align_safety_stock'),
+    
+    
+    path('shift_duty_roster/today', getCurrentDutyShift, name='getCurrentDutyShift'),
 ]
