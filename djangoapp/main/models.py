@@ -446,23 +446,15 @@ def one_week_later():
     return timezone.now() + timedelta(days=7)
 
 class ShiftDuty(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
-    period_start = models.DateTimeField(default=timezone.now)
-    period_end = models.DateTimeField(default=one_week_later)
-
-    members = models.ManyToManyField(Member, through='ShiftDutyRelative')
-
-    def __str__(self):
-        return self.production_area.prod_area_name
-    
-class ShiftDutyRelative(models.Model):
     SHIFT = (('DAY', 'DAY'), ('NIGHT', 'NIGHT'))
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     shift = models.CharField(max_length = 255, choices=SHIFT, default=SHIFT[0][0])
-    shift_duty = models.ForeignKey(ShiftDuty, on_delete=models.CASCADE)
+    period_start = models.DateTimeField(default=timezone.now)
+    period_end = models.DateTimeField(default=one_week_later)
+
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.member.name}"
+        return f"{self.shift}, {self.member.name}"

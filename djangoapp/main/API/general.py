@@ -403,8 +403,7 @@ def getCurrentDutyShift(request):
             if not dutyObj.exists():
                 return Response({"detail": "success", "data": []}, status=status.HTTP_204_NO_CONTENT)
             
-            dutyObjRev = ShiftDutyRelative.objects.filter(shift_duty = dutyObj.first())
-            serializer = ShiftDutyRelativeSerializer(instance = dutyObjRev, many=True)
+            serializer = ShiftDutySerializer(instance = dutyObj, many=True)
             return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         
         return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)

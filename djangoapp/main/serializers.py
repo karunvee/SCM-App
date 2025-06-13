@@ -224,15 +224,9 @@ class HistoryToolTradingSerializer(serializers.ModelSerializer):
 
 class ShiftDutySerializer(serializers.ModelSerializer):
     production_area = ProductionArea()
-    class Meta(object):
-        model = ShiftDuty
-        fields = '__all__'
-
-class ShiftDutyRelativeSerializer(serializers.ModelSerializer):
-    shift_duty = ShiftDutySerializer()
     member = MemberSerializer()
     class Meta(object):
-        model = ShiftDutyRelative
+        model = ShiftDuty
         fields = '__all__'
 
 # Params

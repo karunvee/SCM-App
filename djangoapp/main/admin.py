@@ -176,7 +176,7 @@ class MemberAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {'fields': ('username', 'date_joined', 'production_area')}),
         ('Permission', {'fields': ( 'member_role', 'is_staff', 'is_user', 'is_supervisor', 'is_superuser', 'is_center', 'is_local', 'is_administrator')}),
-        ('Detail', {'fields': ( 'name', 'emp_id', 'tel', 'line_id', 'email', 'image')})
+        ('Detail', {'fields': ( 'name', 'emp_id', 'department', 'tel', 'line_id', 'email', 'image')})
     )
 
     add_fieldsets = (
@@ -338,24 +338,13 @@ class InventoryReportAdmin(admin.ModelAdmin):
 admin.site.register(InventoryReport, InventoryReportAdmin)
 
 
-
-class ShiftDutyRelativeAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'member__username', 'member__name', 'member__emp_id']
-    list_filter = ['shift']
-    list_display = (
-        'id',
-        'member',
-        'shift',
-                    )
-admin.site.register(ShiftDutyRelative, ShiftDutyRelativeAdmin)
-
-
 class ShiftDutyAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'production_area__prod_area_name']
+    search_fields = ['id', 'production_area__prod_area_name','member__username', 'member__name', 'member__emp_id']
 
     list_display = (
         'id',
         'production_area',
+        'member',
         'period_start',
         'period_end'
                     )
