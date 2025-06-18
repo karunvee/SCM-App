@@ -117,8 +117,15 @@ def data_analysis_summary(request):
 
         data_series = []
         date_labels = []
+        acc_series = []
         label_updated = False
 
+        acc_data = {
+            'gi_acc': 0,
+            'scrap_acc': 0,
+            'cost_acc': 0
+        }
+        
         for line in lines:
             series_data = {
                 'name': line,
@@ -160,8 +167,19 @@ def data_analysis_summary(request):
                 series_data['scrap_data'].append(scrap)
                 series_data['cost_data'].append(cost)
 
+                acc_data['gi_acc'] = acc_data['gi_acc'] + gi
+                acc_data['scrap_acc'] = acc_data['scrap_acc'] + scrap
+                acc_data['cost_acc'] = acc_data['cost_acc'] + cost
+
                 if not label_updated:
+                    acc_series.append(acc_data)
                     date_labels.append(current_date.strftime('%m/%d/%Y'))
+
+                    acc_data = {
+                        'gi_acc': 0,
+                        'scrap_acc': 0,
+                        'cost_acc': 0,
+                    }
                 
                 current_date += date_increment
 
@@ -169,7 +187,8 @@ def data_analysis_summary(request):
             data_series.append(series_data)
 
         data = {
-            'overall': {'series': data_series, 'labels': date_labels},
+            'overall': {'series': acc_series, 'labels': date_labels},
+            'by_lines': {'series': data_series, 'labels': date_labels},
             'gi_total': {'series': [], 'labels': []},
             'scrap_total': {'series': [], 'labels': []},
             'cost_total': {'series': [], 'labels': []},
