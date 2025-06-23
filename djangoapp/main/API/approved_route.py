@@ -125,12 +125,13 @@ def approval_list(request):
             route = get_object_or_404(ApprovedRoute, production_area = approver.production_area)
             
             if route.staff_route == approver and route.supervisor_route != approver:
-                request_obj = Request.objects.filter(staff_approved = approver, status = 'Requested').order_by('-issue_date')
+                request_obj = Request.objects.filter(requester__production_area = approver.production_area, staff_approved = approver, status = 'Requested').order_by('-issue_date')
             elif route.staff_route != approver and route.supervisor_route == approver:
-                request_obj = Request.objects.filter(supervisor_approved = approver, status = 'Staff').order_by('-issue_date')
+                request_obj = Request.objects.filter(requester__production_area = approver.production_area, supervisor_approved = approver, status = 'Staff').order_by('-issue_date')
             elif route.staff_route == approver and route.supervisor_route == approver:
-                request_obj = Request.objects.filter(status__in = ['Requested', 'Staff']).order_by('-issue_date')
+                request_obj = Request.objects.filter(requester__production_area = approver.production_area, status__in = ['Requested', 'Staff']).order_by('-issue_date')
             else:
+                # Administrator
                 if not approver.is_supervisor:
                     return Response({"detail": "Not found, you have no approved route."}, status=status.HTTP_404_NOT_FOUND)
                 request_obj = Request.objects.filter(status__in = ['Requested', 'Staff']).order_by('-issue_date')
