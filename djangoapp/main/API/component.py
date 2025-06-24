@@ -396,10 +396,11 @@ def update_component(request, pk):
                 stock_id = entry.get('id', '')
                 stock_type = entry.get('type')  # Either 'equipment_type' or 'machine_type'
                 em_name = entry.get('name')
+                eq_quantity = entry.get('quantity')
                 safety_number = entry.get('safety_number')
                 
                 if stock_type == 'equipment_type':
-                    equip_obj, created = EquipmentType.objects.get_or_create(name=em_name, defaults={"production_area": member.production_area})
+                    equip_obj, created = EquipmentType.objects.update_or_create(name=em_name, defaults={"production_area": member.production_area, "quantity": eq_quantity})
                     
                     if stock_id:
                         rel_obj = get_object_or_404(EquipmentTypeRelation, id=stock_id)
