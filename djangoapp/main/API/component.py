@@ -90,7 +90,7 @@ def component_filter(request):
                 for essRelIndex in essRel:
                     comp['safety_stock'].append({
                         'id': essRelIndex.id,
-                        'type': "equipment_type",
+                        'type': "DSM",
                         'name': essRelIndex.equipment_type.name,
                         'quantity': essRelIndex.equipment_type.quantity,
                         'safety_number': essRelIndex.safety_number,
@@ -103,7 +103,7 @@ def component_filter(request):
                 for mssRelIndex in mssRel:
                     comp['safety_stock'].append({
                         'id': mssRelIndex.id,
-                        'type': "machine_type",
+                        'type': "Offline",
                         'name': mssRelIndex.machine_type.name,
                         'quantity': mssRelIndex.machine_type.quantity,
                         'safety_number': mssRelIndex.safety_number,
@@ -301,16 +301,25 @@ def add_component(request):
             newEquipTypeSafetyStock = []
             newMachineTypeSafetyStock = []
             for typeRel in safetyStockJson:
+
+                lineObj = Line.objects.get_or_create(
+                    line_name = typeRel['line'],
+                    production_area = production_area,
+                    )
+
                 if typeRel['type'] == "equipment_type":
                     equipObj, create = EquipmentType.objects.get_or_create(
                         name = typeRel['equipment_type'],
-                        defaults={"production_area" : production_area}
+                        production_area = production_area,
+                        defaults={}
                     )
                     newEquipTypeSafetyStock.append(
                         EquipmentTypeRelation(
                             equipment_type = equipObj,
                             component = component_obj,
                             safety_number = typeRel['safety_number'],
+                            factor = typeRel['factor'],
+                            line = lineObj,
                             modify_date = now,
                             modify_member = member,
                             added_member = member,
@@ -319,13 +328,16 @@ def add_component(request):
                 else:
                     machineObj, create = MachineType.objects.get_or_create(
                         name = typeRel['equipment_type'],
-                        defaults={"production_area" : production_area}
+                        production_area = production_area,
+                        defaults={}
                     )
                     newMachineTypeSafetyStock.append(
                         MachineTypeRelation(
                             machine_type = machineObj,
                             component = component_obj,
                             safety_number = typeRel['safety_number'],
+                            factor = typeRel['factor'],
+                            line = lineObj,
                             modify_date = now,
                             modify_member = member,
                             added_member = member,
@@ -398,6 +410,7 @@ def update_component(request, pk):
                 em_name = entry.get('name')
                 eq_quantity = entry.get('quantity')
                 safety_number = entry.get('safety_number')
+                factor = entry.get('factor')
                 
                 if stock_type == 'equipment_type':
                     equip_obj, created = EquipmentType.objects.update_or_create(name=em_name, defaults={"production_area": member.production_area, "quantity": eq_quantity})
@@ -405,6 +418,7 @@ def update_component(request, pk):
                     if stock_id:
                         rel_obj = get_object_or_404(EquipmentTypeRelation, id=stock_id)
                         rel_obj.safety_number = safety_number
+                        rel_obj.factor = factor
                         rel_obj.modify_date = now
                         rel_obj.modify_member = member
                         updated_safety_stock.append(rel_obj)
@@ -418,6 +432,7 @@ def update_component(request, pk):
                     if stock_id:
                         rel_obj = get_object_or_404(MachineTypeRelation, id=stock_id)
                         rel_obj.safety_number = safety_number
+                        rel_obj.factor = factor
                         rel_obj.modify_date = now
                         rel_obj.modify_member = member
                         updated_safety_stock.append(rel_obj)
@@ -426,8 +441,8 @@ def update_component(request, pk):
                         new_safety_stock.append(MachineTypeRelation(machine_type=machine_obj, component=component_obj, safety_number=safety_number, modify_date=now, modify_member=member, added_member=member))
             
             # Bulk update and delete stale relations
-            EquipmentTypeRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, EquipmentTypeRelation)], ['safety_number', 'modify_date', 'modify_member'])
-            MachineTypeRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, MachineTypeRelation)], ['safety_number', 'modify_date', 'modify_member'])
+            EquipmentTypeRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, EquipmentTypeRelation)], ['safety_number', 'factor', 'modify_date', 'modify_member'])
+            MachineTypeRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, MachineTypeRelation)], ['safety_number' 'factor', 'modify_date', 'modify_member'])
             EquipmentTypeRelation.objects.filter(component=component_obj).exclude(id__in=current_safety_stock_ids).delete()
             MachineTypeRelation.objects.filter(component=component_obj).exclude(id__in=current_safety_stock_ids).delete()
             EquipmentTypeRelation.objects.bulk_create([rel for rel in new_safety_stock if isinstance(rel, EquipmentTypeRelation)])

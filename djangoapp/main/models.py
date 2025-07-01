@@ -164,13 +164,25 @@ class MachineType(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length = 250)
     quantity = models.IntegerField(default=1)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'production_area'], name='unique_machine_type_per_area')
+        ]
+
     def __str__(self):
         return self.name
     
 class EquipmentType(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
-    name = models.CharField(max_length = 250, unique=True)
+    name = models.CharField(max_length = 250)
     quantity = models.IntegerField(default=1)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'production_area'], name='unique_equipment_type_per_area')
+        ]
+
     def __str__(self):
         return self.name
 
@@ -240,30 +252,48 @@ class Component(models.Model):
     def __str__(self):
         return f"{self.name}, {self.model}"
 
+# DSM Machine
 class EquipmentTypeRelation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     equipment_type = models.ForeignKey(EquipmentType, on_delete=models.CASCADE)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
     safety_number = models.PositiveIntegerField(default=1)
+    factor = models.FloatField(default=1)
     modify_date = models.DateTimeField(default=timezone.now)
     added_date = models.DateTimeField(auto_now_add=True)
+
+    line = models.ForeignKey(Line, on_delete=models.CASCADE, blank=True, null=True)
 
     modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_els_member')
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_els_member')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['equipment_type', 'line'], name='unique_equipment_type_per_line')
+        ]
+
     def __str__(self):
         return f"{self.equipment_type.name}, {self.component.name}"
 
+# Offline Machine
 class MachineTypeRelation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     machine_type = models.ForeignKey(MachineType, on_delete=models.CASCADE)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
     safety_number = models.PositiveIntegerField(default=1)
+    factor = models.FloatField(default=1)
     modify_date = models.DateTimeField(default=timezone.now)
     added_date = models.DateTimeField(auto_now_add=True)
 
+    line = models.ForeignKey(Line, on_delete=models.CASCADE, blank=True, null=True)
+
     modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_mls_member')
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_mls_member')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['machine_type', 'line'], name='unique_machine_type_per_line')
+        ]
 
     def __str__(self):
         return f"{self.machine_type.name}, {self.component.name}"
