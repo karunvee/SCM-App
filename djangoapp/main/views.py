@@ -102,6 +102,7 @@ def login_user(request):
                 if not valid:
                     return Response({"detail": "Credentials are invalid. please check your username or password."}, status=status.HTTP_409_CONFLICT)
             token, create = Token.objects.get_or_create(user=user)
+            print("user.production_area.prod_area_name: ", user.production_area.prod_area_name)
             approvedRoute = get_object_or_404(ApprovedRoute, production_area__prod_area_name=user.production_area.prod_area_name)
             serializer_route = ApprovedRouteSerializer(instance=approvedRoute)
 

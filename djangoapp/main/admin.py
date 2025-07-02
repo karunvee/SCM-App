@@ -36,20 +36,24 @@ class EquipmentTypeRelationAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'component',
-        'safety_number',
+        'm_quantity',
+        'factor',
+        'line',
         'equipment_type',
                     )
 admin.site.register(EquipmentTypeRelation, EquipmentTypeRelationAdmin)
 
-class MachineTypeRelationRelationAdmin(admin.ModelAdmin):
+class MachineTypeRelationAdmin(admin.ModelAdmin):
     search_fields = ['id', 'machine_type__name', 'component__name', 'component__model']
     list_display = (
         'id',
         'component',
-        'safety_number',
+        'm_quantity',
+        'factor',
+        'line',
         'machine_type',
                     )
-admin.site.register(MachineTypeRelation, MachineTypeRelationRelationAdmin)
+admin.site.register(MachineTypeRelation, MachineTypeRelationAdmin)
 
 class DepartmentAdmin(admin.ModelAdmin):
     search_fields = ['name']
@@ -105,7 +109,6 @@ class MachineTypeAdmin(admin.ModelAdmin):
     search_fields = ['name']
     list_display = (
         'name',
-        'quantity',
         'production_area',
         'pk',
                     )
@@ -114,14 +117,13 @@ admin.site.register(MachineType, MachineTypeAdmin)
 class MachineTypeRelationInline(admin.TabularInline):
     model = MachineTypeRelation
     extra = 1  # Number of empty forms to display
-    fields = ('machine_type', 'safety_number', 'modify_date', 'added_date')
+    fields = ('machine_type', 'm_quantity', 'factor', 'modify_date', 'added_date')
     readonly_fields = ('modify_date', 'added_date')  # Make these fields read-only
 
 class EquipmentTypeAdmin(admin.ModelAdmin):
     search_fields = ['name']
     list_display = (
         'name',
-        'quantity',
         'production_area',
         'pk',
                     )
@@ -130,7 +132,7 @@ admin.site.register(EquipmentType, EquipmentTypeAdmin)
 class EquipmentTypeRelationInline(admin.TabularInline):
     model = EquipmentTypeRelation
     extra = 1  # Number of empty forms to display
-    fields = ('equipment_type', 'safety_number', 'modify_date', 'added_date')
+    fields = ('equipment_type', 'm_quantity', 'factor', 'modify_date', 'added_date')
     readonly_fields = ('modify_date', 'added_date')  # Make these fields read-only
 
 class ComponentAdmin(admin.ModelAdmin):

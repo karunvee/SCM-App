@@ -163,7 +163,6 @@ class ComponentType(models.Model):
 class MachineType(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length = 250)
-    quantity = models.IntegerField(default=1)
 
     class Meta:
         constraints = [
@@ -176,7 +175,6 @@ class MachineType(models.Model):
 class EquipmentType(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length = 250)
-    quantity = models.IntegerField(default=1)
 
     class Meta:
         constraints = [
@@ -257,7 +255,7 @@ class EquipmentTypeRelation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     equipment_type = models.ForeignKey(EquipmentType, on_delete=models.CASCADE)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
-    safety_number = models.PositiveIntegerField(default=1)
+    m_quantity = models.PositiveIntegerField(default=1)
     factor = models.FloatField(default=1)
     modify_date = models.DateTimeField(default=timezone.now)
     added_date = models.DateTimeField(auto_now_add=True)
@@ -280,7 +278,7 @@ class MachineTypeRelation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     machine_type = models.ForeignKey(MachineType, on_delete=models.CASCADE)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
-    safety_number = models.PositiveIntegerField(default=1)
+    m_quantity = models.PositiveIntegerField(default=1)
     factor = models.FloatField(default=1)
     modify_date = models.DateTimeField(default=timezone.now)
     added_date = models.DateTimeField(auto_now_add=True)
