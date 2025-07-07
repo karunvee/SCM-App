@@ -101,13 +101,16 @@ def login_user(request):
                 e_code, e_msg, valid = validate_credentials(username, ad_server, password)
                 if not valid:
                     return Response({"detail": "Credentials are invalid. please check your username or password."}, status=status.HTTP_409_CONFLICT)
+            
             token, create = Token.objects.get_or_create(user=user)
-            print("user.production_area.prod_area_name: ", user.production_area.prod_area_name)
-            approvedRoute = get_object_or_404(ApprovedRoute, production_area__prod_area_name=user.production_area.prod_area_name)
-            serializer_route = ApprovedRouteSerializer(instance=approvedRoute)
 
             serializer = MemberSerializer(instance=user)
-            return Response({"detail": "success", "token": token.key, "data": serializer.data, "route_data": serializer_route.data}, status=status.HTTP_200_OK)
+            if user.production_area:
+                approvedRoute = get_object_or_404(ApprovedRoute, production_area__prod_area_name=user.production_area.prod_area_name)
+                serializer_route = ApprovedRouteSerializer(instance=approvedRoute)
+                return Response({"detail": "success", "token": token.key, "data": serializer.data, "route_data": serializer_route.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({"detail": "success", "token": token.key, "data": serializer.data, "route_data": None}, status=status.HTTP_200_OK)
             
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
