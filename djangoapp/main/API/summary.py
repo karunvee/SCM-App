@@ -28,8 +28,7 @@ def data_analysis_breakdown(request):
         line_name = request.data.get('line_name')
         locations = request.data.get('locations',[])
         component_types = request.data.get('component_types',[])
-        machine_types = request.data.get('machine_types',[])
-        equipments = request.data.get('equipments',[])
+        machine = request.data.get('machine',[])
         date_mode = request.data.get('date_mode').lower()
         date_start = request.data.get('date_start')
         # date_range = request.data.get('date_range')
@@ -52,7 +51,7 @@ def data_analysis_breakdown(request):
             #     Q(lines__line_name=line_name) &\
             #     Q(component__location__name__in=locations) &\
             #     Q(component__component_type__name__in=component_types) &\
-            #     Q(component__machine_type__name__in=machine_types) &\
+            #     Q(component__machine__name__in=machine) &\
             #     Q(issue_date__date__range=[date_start, date_end])
             # )
             # print(hObj.values_list('component_id', flat=True))
@@ -64,7 +63,7 @@ def data_analysis_breakdown(request):
                 historytrading__lines__line_name=line_name,
                 historytrading__component__location__name__in=locations,
                 historytrading__component__component_type__name__in=component_types,
-                historytrading__component__machine_type__name__in=machine_types,
+                historytrading__component__machine__name__in=machine,
                 historytrading__issue_date__range=[date_start, date_end]
             ).annotate(
                 total_gi_qty=Coalesce(Sum('historytrading__gi_qty', filter=Q(historytrading__issue_date__date__range=[date_start, date_end])), Value(0)),
@@ -78,7 +77,7 @@ def data_analysis_breakdown(request):
                     "name": component.name,
                     "model": component.model,
                     "component_type": component.component_type.name,
-                    "machine_type": component.machine_type.name,
+                    "machine": component.machine.name,
                     "unique_id": component.unique_id,
                     "price": component.price,
                     "location": component.location.name,
@@ -108,7 +107,7 @@ def data_analysis_summary(request):
         lines = request.data.get('lines', [])
         locations = request.data.get('locations', [])
         component_types = request.data.get('component_types', [])
-        machine_types = request.data.get('machine_types', [])
+        machine = request.data.get('machine', [])
         date_mode = request.data.get('date_mode')
         date_range = request.data.get('date_range')
 
@@ -155,7 +154,7 @@ def data_analysis_summary(request):
                     Q(lines__line_name=line) &
                     Q(component__location__name__in=locations) &
                     Q(component__component_type__name__in=component_types) &
-                    Q(component__machine_type__name__in=machine_types) &
+                    Q(component__machine__name__in=machine) &
                     date_filter
                 )
 
@@ -212,64 +211,17 @@ def data_analysis_summary(request):
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def data_machine_type_summary(request, prod_area_name):
-    try:
-        machine_type_list = MachineType.objects.filter(production_area__prod_area_name = prod_area_name)
-        serializers_mt = MachineTypeSerializer(instance = machine_type_list, many=True)
-
-        for mt in serializers_mt.data:
-            machine_type_name = mt.get("name")  # Ensure this corresponds to EquipmentType.name
-            
-            comp = Component.objects.filter(machinetyperelation__machine_type__name=machine_type_name)
-            
-            if comp.exists():
-                serializers_comp = ComponentWithoutSerialsSerializer(instance=comp, many=True)
-                mt["components"] = serializers_comp.data
-                mt["component_qty"] = comp.count()
-                mt["component_below_safety"] = comp.filter(quantity__lt=F('quantity_alert')).count()
-            else:
-                mt["components"] = []
-                mt["component_qty"] = 0
-                mt["component_below_safety"] = 0
-
-
-        return Response({"detail": "success", "data": serializers_mt.data}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-@api_view(['GET'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def data_machinery_summary(request, prod_area_name):
     try:
-        data = WarRoom_API().getMachinesByProdArea('NONE', prod_area_name)
+        d = {}
 
-        for line in data:
-            for machine in line["machine_list"]:
-                equipment_type_name = machine.get("equipment_type")  # Ensure this corresponds to EquipmentType.name
-                
-                # Get the EquipmentType object
-                equipment_type = EquipmentType.objects.filter(name=equipment_type_name).first()
-                
-                if equipment_type:
-                    # Get related components through EquipmentTypeRelation
-                    comp = Component.objects.filter(equipmenttyperelation__equipment_type=equipment_type)
-                    
-                    if comp.exists():
-                        serializers_comp = ComponentWithoutSerialsSerializer(instance=comp, many=True)
-                        machine["components"] = serializers_comp.data
-                        machine["component_qty"] = comp.count()
-                        machine["component_below_safety"] = comp.filter(quantity__lt=F('quantity_alert')).count()
-                    else:
-                        machine["components"] = []
-                        machine["component_qty"] = 0
-                        machine["component_below_safety"] = 0
-                else:
-                    machine["components"] = []
-                    machine["component_qty"] = 0
-                    machine["component_below_safety"] = 0
+        lineObj = Line.objects.filter(production_area__prod_area_name = prod_area_name)
+        
 
-        return Response({"detail": "success", "data": data}, status=status.HTTP_200_OK)
+        # Machine list 
+        # Top 10 priority equipment shortage
+
+        return Response({"detail": "success", "data": None}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     

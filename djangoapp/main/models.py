@@ -160,9 +160,64 @@ class ComponentType(models.Model):
     def __str__(self):
         return self.name
 
+class Machine(models.Model):
+    TYPES = (('DSM', 'DSM'), ('OFFLINE', 'OFFLINE'))
+    type =  models.CharField(max_length = 255, choices=TYPES, default=TYPES[0][0])
+    
+    production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
+    name = models.CharField(max_length = 250)
+
+    image = models.ImageField(upload_to='images/machines/', blank=True)
+    def save(self, *args, **kwargs):
+        try:
+            # Check if the instance already exists in the database
+            existing = Machine.objects.get(id=self.id)
+            if existing.image and self.image and existing.image != self.image:
+                # Delete the old image file
+                if os.path.isfile(existing.image.path):
+                    os.remove(existing.image.path)
+        except Machine.DoesNotExist:
+            # New object, no action needed
+            pass
+
+        super(Machine, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.image and os.path.isfile(self.image.path):
+            os.remove(self.image.path)
+        super(Machine, self).delete(*args, **kwargs)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'production_area'], name='unique_machine_per_area')
+        ]
+
+    def __str__(self):
+        return self.name
+
 class MachineType(models.Model):
     production_area = models.ForeignKey(ProductionArea, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length = 250)
+
+    image = models.ImageField(upload_to='images/machines/', blank=True)
+    def save(self, *args, **kwargs):
+        try:
+            # Check if the instance already exists in the database
+            existing = MachineType.objects.get(id=self.id)
+            if existing.image and self.image and existing.image != self.image:
+                # Delete the old image file
+                if os.path.isfile(existing.image.path):
+                    os.remove(existing.image.path)
+        except MachineType.DoesNotExist:
+            # New object, no action needed
+            pass
+
+        super(MachineType, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.image and os.path.isfile(self.image.path):
+            os.remove(self.image.path)
+        super(MachineType, self).delete(*args, **kwargs)
 
     class Meta:
         constraints = [
@@ -218,8 +273,9 @@ class Component(models.Model):
     modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_c_member')
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_c_member')
 
-    equipment_type = models.ManyToManyField(EquipmentType, through='EquipmentTypeRelation')
-    machine_type = models.ManyToManyField(MachineType, through='MachineTypeRelation')
+    machine = models.ManyToManyField(Machine, through='MachineRelation')
+    # equipment_type = models.ManyToManyField(EquipmentType, through='EquipmentTypeRelation')
+    # machine_type = models.ManyToManyField(MachineType, through='MachineTypeRelation')
 
     def save(self, *args, **kwargs):
         try:
@@ -249,6 +305,30 @@ class Component(models.Model):
         
     def __str__(self):
         return f"{self.name}, {self.model}"
+
+
+class MachineRelation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    machine = models.ForeignKey(Machine, on_delete=models.CASCADE)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    m_quantity = models.PositiveIntegerField(default=1)
+    factor = models.FloatField(default=1)
+    modify_date = models.DateTimeField(default=timezone.now)
+    added_date = models.DateTimeField(auto_now_add=True)
+
+    line = models.ForeignKey(Line, on_delete=models.CASCADE, blank=True, null=True)
+
+    modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_ms_member')
+    added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_ms_member')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['machine', 'line'], name='unique_machine_per_line')
+        ]
+
+    def __str__(self):
+        return f"{self.machine.name}, {self.component.name}"
+
 
 # DSM Machine
 class EquipmentTypeRelation(models.Model):

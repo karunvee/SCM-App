@@ -31,29 +31,29 @@ class LineAdmin(admin.ModelAdmin):
                     )
 admin.site.register(Line, LineAdmin)
 
-class EquipmentTypeRelationAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'equipment_type__name', 'component__name', 'component__model']
-    list_display = (
-        'id',
-        'component',
-        'm_quantity',
-        'factor',
-        'line',
-        'equipment_type',
-                    )
-admin.site.register(EquipmentTypeRelation, EquipmentTypeRelationAdmin)
+# class EquipmentTypeRelationAdmin(admin.ModelAdmin):
+#     search_fields = ['id', 'equipment_type__name', 'component__name', 'component__model']
+#     list_display = (
+#         'id',
+#         'component',
+#         'm_quantity',
+#         'factor',
+#         'line',
+#         'equipment_type',
+#                     )
+# admin.site.register(EquipmentTypeRelation, EquipmentTypeRelationAdmin)
 
-class MachineTypeRelationAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'machine_type__name', 'component__name', 'component__model']
-    list_display = (
-        'id',
-        'component',
-        'm_quantity',
-        'factor',
-        'line',
-        'machine_type',
-                    )
-admin.site.register(MachineTypeRelation, MachineTypeRelationAdmin)
+# class MachineTypeRelationAdmin(admin.ModelAdmin):
+#     search_fields = ['id', 'machine_type__name', 'component__name', 'component__model']
+#     list_display = (
+#         'id',
+#         'component',
+#         'm_quantity',
+#         'factor',
+#         'line',
+#         'machine_type',
+#                     )
+# admin.site.register(MachineTypeRelation, MachineTypeRelationAdmin)
 
 class DepartmentAdmin(admin.ModelAdmin):
     search_fields = ['name']
@@ -105,38 +105,66 @@ class SerialNumberInline(admin.TabularInline):  # Use 'StackedInline' for a diff
     model = SerialNumber
     extra = 1 
 
-class MachineTypeAdmin(admin.ModelAdmin):
+class MachineAdmin(admin.ModelAdmin):
     search_fields = ['name']
     list_display = (
         'name',
         'production_area',
         'pk',
                     )
-admin.site.register(MachineType, MachineTypeAdmin)
+admin.site.register(Machine, MachineAdmin)
 
-class MachineTypeRelationInline(admin.TabularInline):
-    model = MachineTypeRelation
-    extra = 1  # Number of empty forms to display
-    fields = ('machine_type', 'm_quantity', 'factor', 'modify_date', 'added_date')
-    readonly_fields = ('modify_date', 'added_date')  # Make these fields read-only
-
-class EquipmentTypeAdmin(admin.ModelAdmin):
-    search_fields = ['name']
+class MachineRelationAdmin(admin.ModelAdmin):
+    search_fields = ['id', 'machine__name', 'component__name', 'component__model']
     list_display = (
-        'name',
-        'production_area',
-        'pk',
+        'id',
+        'component',
+        'm_quantity',
+        'factor',
+        'line',
+        'machine',
                     )
-admin.site.register(EquipmentType, EquipmentTypeAdmin)
+admin.site.register(MachineRelation, MachineRelationAdmin)
 
-class EquipmentTypeRelationInline(admin.TabularInline):
-    model = EquipmentTypeRelation
+class MachineRelationInline(admin.TabularInline):
+    model = MachineRelation
     extra = 1  # Number of empty forms to display
-    fields = ('equipment_type', 'm_quantity', 'factor', 'modify_date', 'added_date')
+    fields = ('machine', 'm_quantity', 'factor', 'modify_date', 'added_date')
     readonly_fields = ('modify_date', 'added_date')  # Make these fields read-only
+
+# class MachineTypeAdmin(admin.ModelAdmin):
+#     search_fields = ['name']
+#     list_display = (
+#         'name',
+#         'production_area',
+#         'pk',
+#                     )
+# admin.site.register(MachineType, MachineTypeAdmin)
+
+# class MachineTypeRelationInline(admin.TabularInline):
+#     model = MachineTypeRelation
+#     extra = 1  # Number of empty forms to display
+#     fields = ('machine_type', 'm_quantity', 'factor', 'modify_date', 'added_date')
+#     readonly_fields = ('modify_date', 'added_date')  # Make these fields read-only
+
+# class EquipmentTypeAdmin(admin.ModelAdmin):
+#     search_fields = ['name']
+#     list_display = (
+#         'name',
+#         'production_area',
+#         'pk',
+#                     )
+# admin.site.register(EquipmentType, EquipmentTypeAdmin)
+
+# class EquipmentTypeRelationInline(admin.TabularInline):
+#     model = EquipmentTypeRelation
+#     extra = 1  # Number of empty forms to display
+#     fields = ('equipment_type', 'm_quantity', 'factor', 'modify_date', 'added_date')
+#     readonly_fields = ('modify_date', 'added_date')  # Make these fields read-only
 
 class ComponentAdmin(admin.ModelAdmin):
-    inlines = [MachineTypeRelationInline, EquipmentTypeRelationInline, SerialNumberInline]
+    inlines = [MachineRelationInline, SerialNumberInline]
+    # inlines = [MachineTypeRelationInline, EquipmentTypeRelationInline, SerialNumberInline]
     search_fields = ['name', 'model', 'supplier']
     list_display = (
         'name',

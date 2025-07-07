@@ -73,46 +73,30 @@ def component_filter(request):
         query_serializer = ComponentFilterQuerySerializer(data = request.query_params)
         if query_serializer.is_valid():
             component_type_content = query_serializer.validated_data.get('component_type_content')
-            machine_type_content = query_serializer.validated_data.get('machine_type_content')
             production_name = query_serializer.validated_data.get('production_name')
 
             component_obj = Component.objects.filter(production_area__prod_area_name = production_name).order_by('name')
             if component_type_content != 'All':   
                 component_obj = component_obj.filter(component_type__name = component_type_content).order_by('name')
-            if machine_type_content != 'All':
-                component_obj = component_obj.filter( machine_type__name = machine_type_content).order_by('name')
+
 
             comp_serializers = ComponentSerializer(instance=component_obj, many=True)
 
             for comp in comp_serializers.data:
-                essRel = EquipmentTypeRelation.objects.filter(component__id = comp['id'])
+                essRel = MachineRelation.objects.filter(component__id = comp['id'])
                 comp['safety_stock'] = []
                 for essRelIndex in essRel:
                     comp['safety_stock'].append({
                         'id': essRelIndex.id,
                         'line': essRelIndex.line.line_name,
-                        'type': "DSM",
-                        'name': essRelIndex.equipment_type.name,
+                        'type': essRelIndex.machine.type,
+                        'name': essRelIndex.machine.name,
                         'm_quantity': essRelIndex.m_quantity,
                         'factor': essRelIndex.factor,
                         'modify_date': essRelIndex.modify_date,
                         'added_date': essRelIndex.added_date,
                         'modify_member': f"{essRelIndex.modify_member.emp_id}, {essRelIndex.modify_member.name}",
                         'added_member': f"{essRelIndex.added_member.emp_id}, {essRelIndex.added_member.name}",
-                    })
-                mssRel = MachineTypeRelation.objects.filter(component__id = comp['id'])
-                for mssRelIndex in mssRel:
-                    comp['safety_stock'].append({
-                        'id': mssRelIndex.id,
-                        'line': mssRelIndex.line.line_name,
-                        'type': "Offline",
-                        'name': mssRelIndex.machine_type.name,
-                        'm_quantity': essRelIndex.m_quantity,
-                        'factor': essRelIndex.factor,
-                        'modify_date': mssRelIndex.modify_date,
-                        'added_date': mssRelIndex.added_date,
-                        'modify_member': f"{mssRelIndex.modify_member.emp_id}, {mssRelIndex.modify_member.name}",
-                        'added_member': f"{mssRelIndex.added_member.emp_id}, {mssRelIndex.added_member.name}",
                     })
 
             return Response({"detail": "success", "data": comp_serializers.data}, status=status.HTTP_200_OK)
@@ -138,62 +122,6 @@ def auto_align_safety_stock(request, prod_area_name):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-
-# def auto_align_safety_stock_function(prod_area_name):
-
-#     prodArea = get_object_or_404(ProductionArea, prod_area_name=prod_area_name)  # Fixed field name
-
-#     # Fetch machine data
-#     data = WarRoom_API().getMachinesByProdArea(prodArea.mes_factory, "ALL")
-
-#     # Fetch all existing equipment types in the production area once
-#     existing_equipment = {
-#         eq.name: eq for eq in EquipmentType.objects.filter(production_area=prodArea)
-#     }
-
-#     update_list = []
-#     for line in data:
-#         for machine in line["machine_list"]:
-#             equipment_name = machine["equipment_type"]
-#             quantity = machine["equipment_type_count"]
-
-#             if equipment_name in existing_equipment:
-#                 obj = existing_equipment[equipment_name]
-#                 obj.quantity = quantity
-#                 update_list.append(obj)
-
-#     # Bulk update equipment quantities
-#     if update_list:
-#         EquipmentType.objects.bulk_update(update_list, ['quantity'])
-
-
-#     all_component_list = Component.objects.filter(location__production_area = prodArea)
-
-#     comp_update_list = []
-#     for comp in all_component_list:
-#         total_acc = 0
-
-#         for et in comp.equipmenttyperelation_set.all():
-#             # total_acc += getattr(et.equipment_type, 'quantity', 0)
-#             total_acc += et.factor * getattr(et.equipment_type, 'm_quantity', 0)
-
-#         for mt in comp.machinetyperelation_set.all():
-#             # total_acc += getattr(mt.machine_type, 'quantity', 0)
-#             total_acc += mt.factor * getattr(mt.machine_type, 'm_quantity', 0)
-
-#         if comp.equipmenttyperelation_set.count() > 0 or comp.machinetyperelation_set.count() > 0:
-
-#             comp.quantity_warning = total_acc * 1.2
-#             comp.quantity_alert = total_acc * 1
-#             comp_update_list.append(comp)
-
-
-#     if comp_update_list:
-#         Component.objects.bulk_update(comp_update_list, ['quantity_warning', 'quantity_alert'])
-
-#     print("Align the safety and warning stock successfully")
-
-
 def auto_align_safety_stock_function(prod_area_name):
 
     prodArea = get_object_or_404(ProductionArea, prod_area_name=prod_area_name)  # Fixed field name
@@ -204,16 +132,10 @@ def auto_align_safety_stock_function(prod_area_name):
     for comp in componentList:
         total_acc = 0
 
-        for et in comp.equipmenttyperelation_set.all():
-            # total_acc += et.m_quantity * getattr(et.equipment_type, 'm_quantity', 0))
-            print(comp, et.factor, et.m_quantity)
-            total_acc += et.factor * et.m_quantity
+        for mt in comp.machinerelation_set.all():
+            total_acc += mt.factor * getattr(mt.machine, 'm_quantity', 0)
 
-        for mt in comp.machinetyperelation_set.all():
-            # total_acc += mt.m_quantity * mt.machine_type.quantity
-            total_acc += mt.factor * getattr(mt.machine_type, 'm_quantity', 0)
-
-        if comp.equipmenttyperelation_set.count() > 0 or comp.machinetyperelation_set.count() > 0:
+        if  comp.machinerelation_set.count() > 0:
             print(comp, total_acc)
             comp.quantity_warning = total_acc * 1.2
             comp.quantity_alert = total_acc
@@ -337,52 +259,36 @@ def add_component(request):
             for entry in safetyStockJson:
                 line_name = entry.get('line', '')
                 stock_id = entry.get('id', '')
-                stock_type = entry.get('type')  # Either 'equipment_type' or 'machine_type'
+                stock_type = entry.get('type')  # Either 'DSM' or 'Offline'
                 em_name = entry.get('name')
                 m_quantity = entry.get('m_quantity')
                 factor = entry.get('factor')
 
                 line_obj, l_created = Line.objects.get_or_create(line_name=line_name, production_area= member.production_area)
 
-                if stock_type == "DSM":
-                    equipObj, create = EquipmentType.objects.get_or_create(
-                        name = em_name,
-                        production_area = production_area,
-                        defaults={}
+                machineObj, create = Machine.objects.get_or_create(
+                    name = em_name,
+                    production_area = production_area,
+                    type = 'DSM' if stock_type == 'DSM' else 'OFFLINE',
+                    defaults={}
+                )
+                newMachineTypeSafetyStock.append(
+                    MachineRelation(
+                        line = line_obj,
+                        machine = machineObj,
+                        component = component_obj,
+                        m_quantity = m_quantity,
+                        factor = factor,
+                        modify_date = now,
+                        modify_member = member,
+                        added_member = member,
                     )
-                    newEquipTypeSafetyStock.append(
-                        EquipmentTypeRelation(
-                            line = line_obj,
-                            equipment_type = equipObj,
-                            component = component_obj,
-                            m_quantity = m_quantity,
-                            factor =factor,
-                            modify_date = now,
-                            modify_member = member,
-                            added_member = member,
-                        )
-                    )
-                elif stock_type == 'Offline':
-                    machineObj, create = MachineType.objects.get_or_create(
-                        name = em_name,
-                        production_area = production_area,
-                        defaults={}
-                    )
-                    newMachineTypeSafetyStock.append(
-                        MachineTypeRelation(
-                            line = line_obj,
-                            machine_type = machineObj,
-                            component = component_obj,
-                            m_quantity = m_quantity,
-                            factor = factor,
-                            modify_date = now,
-                            modify_member = member,
-                            added_member = member,
-                        )
-                    )
+                )
+                    
 
-            EquipmentTypeRelation.objects.bulk_create(newEquipTypeSafetyStock)
-            MachineTypeRelation.objects.bulk_create(newMachineTypeSafetyStock)
+            MachineRelation.objects.bulk_create(newMachineTypeSafetyStock)
+            # MachineTypeRelation.objects.bulk_create(newMachineTypeSafetyStock)
+            # MachineTypeRelation.objects.bulk_create(newMachineTypeSafetyStock)
             
             serializer = ComponentSerializer(component_obj)
             return Response({"detail": f"Successfully added {name}.", "data": serializer.data}, status=status.HTTP_201_CREATED)
@@ -423,7 +329,6 @@ def update_component(request, pk):
 
             memberObj = get_object_or_404(Member, emp_id = emp_id)
 
-            # machine_type = get_object_or_404(MachineType, name=request.data.get('machine_type'), production_area = memberObj.production_area)
             component_type = get_object_or_404(ComponentType, name=request.data.get('component_type'))
             department = get_object_or_404(Department, name=request.data.get('department'))
             location = get_object_or_404(Location, name=request.data.get('location'), production_area = memberObj.production_area)
@@ -445,7 +350,7 @@ def update_component(request, pk):
             for entry in safety_stock_json:
                 line_name = entry.get('line')
                 stock_id = entry.get('id', '')
-                stock_type = entry.get('type')  # Either 'equipment_type' or 'machine_type'
+                stock_type = entry.get('type') 
                 em_name = entry.get('name')
                 m_quantity = entry.get('m_quantity')
                 factor = entry.get('factor')
@@ -453,67 +358,45 @@ def update_component(request, pk):
                 # line_obj, l_created = Line.objects.filter(line_name=line_name, production_area= member.production_area)
                 line_obj = get_object_or_404(Line, line_name=line_name)
 
-                if stock_type == 'DSM':
-                    equip_obj, e_created = EquipmentType.objects.update_or_create(name=em_name, defaults={"production_area": member.production_area})
+                machine_obj = Machine.objects.filter(production_area = member.production_area, name = em_name).first()
                     
-                    if stock_id:
-                        # Update Exist Relation
-                        rel_obj = get_object_or_404(EquipmentTypeRelation, id=stock_id)
-                        rel_obj.line = line_obj
-                        rel_obj.m_quantity = m_quantity
-                        rel_obj.factor = factor
-                        rel_obj.modify_date = now
-                        rel_obj.modify_member = member
+                if stock_id:
+                    # Update Exist Relation
+                    rel_obj = get_object_or_404(MachineRelation, id=stock_id)
+                    rel_obj.line = line_obj
+                    rel_obj.m_quantity = m_quantity
+                    rel_obj.factor = factor
+                    rel_obj.modify_date = now
+                    rel_obj.modify_member = member
 
-                        updated_safety_stock.append(rel_obj)
-                        current_safety_stock_ids.append(stock_id)
-                    else:
-                        # Create New Relation
-                        new_safety_stock.append(EquipmentTypeRelation(
-                            line=line_obj,
-                            equipment_type=equip_obj, 
-                            component=component_obj, 
-                            m_quantity=m_quantity, 
-                            factor=factor,
-                            modify_date=now, 
-                            modify_member=member, 
-                            added_member=member))
+                    updated_safety_stock.append(rel_obj)
+                    current_safety_stock_ids.append(stock_id)
+                else:
+                    # Create New Relation
+                    new_safety_stock.append(MachineRelation(
+                        line=line_obj,
+                        machine=machine_obj, 
+                        component=component_obj, 
+                        m_quantity=m_quantity, 
+                        factor=factor,
+                        modify_date=now, 
+                        modify_member=member, 
+                        added_member=member))
                     
-                elif stock_type == 'Offline':
-                    machine_obj = MachineType.objects.filter(production_area = member.production_area, name = em_name).first()
-                    
-                    if stock_id:
-                        # Update Exist Relation
-                        rel_obj = get_object_or_404(MachineTypeRelation, id=stock_id)
-                        rel_obj.line = line_obj
-                        rel_obj.m_quantity = m_quantity
-                        rel_obj.factor = factor
-                        rel_obj.modify_date = now
-                        rel_obj.modify_member = member
-
-                        updated_safety_stock.append(rel_obj)
-                        current_safety_stock_ids.append(stock_id)
-                    else:
-                        # Create New Relation
-                        new_safety_stock.append(MachineTypeRelation(
-                            line=line_obj,
-                            machine_type=machine_obj, 
-                            component=component_obj, 
-                            m_quantity=m_quantity, 
-                            factor=factor,
-                            modify_date=now, 
-                            modify_member=member, 
-                            added_member=member))
             
             
 
             # Bulk update and delete stale relations
-            EquipmentTypeRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, EquipmentTypeRelation)], ['line', 'm_quantity', 'factor', 'modify_date', 'modify_member'])
-            MachineTypeRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, MachineTypeRelation)], ['line', 'm_quantity', 'factor', 'modify_date', 'modify_member'])
-            EquipmentTypeRelation.objects.filter(component=component_obj).exclude(id__in=current_safety_stock_ids).delete()
-            MachineTypeRelation.objects.filter(component=component_obj).exclude(id__in=current_safety_stock_ids).delete()
-            EquipmentTypeRelation.objects.bulk_create([rel for rel in new_safety_stock if isinstance(rel, EquipmentTypeRelation)])
-            MachineTypeRelation.objects.bulk_create([rel for rel in new_safety_stock if isinstance(rel, MachineTypeRelation)])
+            MachineRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, MachineRelation)], ['line', 'm_quantity', 'factor', 'modify_date', 'modify_member'])
+            MachineRelation.objects.filter(component=component_obj).exclude(id__in=current_safety_stock_ids).delete()
+            MachineRelation.objects.bulk_create([rel for rel in new_safety_stock if isinstance(rel, MachineRelation)])
+
+            # EquipmentTypeRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, EquipmentTypeRelation)], ['line', 'm_quantity', 'factor', 'modify_date', 'modify_member'])
+            # MachineTypeRelation.objects.bulk_update([rel for rel in updated_safety_stock if isinstance(rel, MachineTypeRelation)], ['line', 'm_quantity', 'factor', 'modify_date', 'modify_member'])
+            # EquipmentTypeRelation.objects.filter(component=component_obj).exclude(id__in=current_safety_stock_ids).delete()
+            # MachineTypeRelation.objects.filter(component=component_obj).exclude(id__in=current_safety_stock_ids).delete()
+            # EquipmentTypeRelation.objects.bulk_create([rel for rel in new_safety_stock if isinstance(rel, EquipmentTypeRelation)])
+            # MachineTypeRelation.objects.bulk_create([rel for rel in new_safety_stock if isinstance(rel, MachineTypeRelation)])
 
 
             if image:
@@ -566,7 +449,6 @@ def update_component(request, pk):
             component_obj.mro_pn = mro_pn.upper()
             component_obj.price = price
             component_obj.supplier = supplier
-            # component_obj.machine_type = machine_type
             component_obj.component_type = component_type
             component_obj.department = department
             component_obj.location = location

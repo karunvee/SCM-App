@@ -12,11 +12,11 @@ urlpatterns = [
     path('approved/your/route/', get_your_approved_route , name='get_your_approved_route'),    
 
     path('basic_info/list/<str:pda>/', basic_info , name='basic_info'),
-    path('machine_type/list/<str:pda>/', get_machine_type , name='get_machine_type'),
+    path('machine_info/list/', get_machine_info , name='get_machine_info'),
     path('location/add/', add_location , name='add_location'),
     path('location/delete/<str:id>/', delete_location , name='delete_location'),
-    path('machine/type/add/', add_machine_type , name='add_machine_type'),
-    path('machine/type/delete/<str:id>/', delete_machine_type , name='delete_machine_type'),
+    path('machine/add/', add_machine , name='add_machine'),
+    path('machine/delete/<str:id>/', delete_machine , name='delete_machine'),
 
     path('storage/list/', component_list , name='component_list'), # without Serial Number List
     path('storage/list/filter/', component_filter , name='component_filter'), # with Serial Number List
@@ -99,7 +99,6 @@ urlpatterns = [
     path('data/analysis_breakdown/', data_analysis_breakdown, name='data_analysis_breakdown'),
 
     path('data/machinery_summary/<str:prod_area_name>/', data_machinery_summary, name='data_machinery_summary'),
-    path('data/machinery_summary/machine_type/<str:prod_area_name>/', data_machine_type_summary, name='data_machine_type_summary'),
 
     path('data/auto_align_safety_stock/<str:prod_area_name>/', auto_align_safety_stock, name='auto_align_safety_stock'),
     

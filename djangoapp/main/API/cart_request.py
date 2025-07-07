@@ -108,7 +108,7 @@ def my_request(request):
                         'component_id' : reqRelIndex.component.pk,
                         'component_name' : reqRelIndex.component.name,
                         'component_model' : reqRelIndex.component.model,
-                        'component_machine_type' : reqRelIndex.component.machine_type.name,
+                        'component_machine' : reqRelIndex.component.machine.name,
                         'component_component_type' : reqRelIndex.component.component_type.name,
                         'component_image' : reqRelIndex.component.image_url,
                         'component_consumable' : reqRelIndex.component.consumable,

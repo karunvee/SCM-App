@@ -156,8 +156,8 @@ def basic_info(request, pda):
             instance=locations, 
             many=True
             )
-        machineTypes = MachineType.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('name')
-        m_serializers = MachineTypeSerializer(
+        machineTypes = Machine.objects.filter(Q(production_area__isnull=True) | Q(production_area=prodArea)).order_by('name')
+        m_serializers = MachineSerializer(
             instance=machineTypes, 
             many=True
             )
@@ -179,14 +179,17 @@ def basic_info(request, pda):
     
 
 @api_view(['GET'])
-def get_machine_type(request, pda):
+def get_machine_info(request):
     try:
-        machineTypes = MachineType.objects.filter(Q(production_area__isnull=False) & Q(production_area__prod_area_name=pda)).order_by('name')
-        print(pda, machineTypes)
-        m_serializers = MachineTypeSerializer( instance=machineTypes, many=True)
+        query_serializer = ComponentProdNameTypeQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            production_name = query_serializer.validated_data.get('production_name')
+            type = query_serializer.validated_data.get('type')
+            machines = Machine.objects.filter(Q(production_area__isnull=False) & Q(production_area__prod_area_name=production_name) & Q(type=type)).order_by('name')
+            m_serializers = MachineSerializer( instance=machines, many=True)
 
-
-        return Response({"detail": "success", "data": m_serializers.data}, status=status.HTTP_200_OK)
+            return Response({"detail": "success", "data": m_serializers.data}, status=status.HTTP_200_OK)
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -230,24 +233,27 @@ def delete_location(request, id):
 @api_view(['POST', 'PUT'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def add_machine_type(request):
+def add_machine(request):
     try:
-        machine_type_name = request.data.get('name')
+        machine_name = request.data.get('name')
         prod_area_name = request.data.get('prod_area_name')
-        quantity = request.data.get('quantity')
+        image = request.data.get('image')
+        type = request.data.get('type')
         id = request.data.get('id')
     
-        if MachineType.objects.filter(name = machine_type_name, production_area__prod_area_name = prod_area_name).exclude(pk = id).exists():
+        if Machine.objects.filter(name = machine_name, production_area__prod_area_name = prod_area_name).exclude(pk = id).exists():
             return Response({"detail": "Duplicated, this machine type already exist in the list."}, status=status.HTTP_409_CONFLICT)
         
+        print(image)
         if request.method == 'POST':
-            MachineType.objects.create(
-                name = machine_type_name,
+            Machine.objects.create(
+                name = machine_name,
+                image = image,
+                type = type,
                 production_area = get_object_or_404(ProductionArea, prod_area_name = prod_area_name),
-                quantity = quantity
             )
         elif request.method == 'PUT':
-            MachineType.objects.filter(id = id).update(name = machine_type_name, quantity = quantity)
+            Machine.objects.filter(id = id).update(name = machine_name, image = image)
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -257,10 +263,10 @@ def add_machine_type(request):
 @api_view(['DELETE'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def delete_machine_type(request, id):
+def delete_machine(request, id):
 
-    machineType_obj = get_object_or_404(MachineType, pk = id)
-    machineType_obj.delete()
+    machine_obj = get_object_or_404(Machine, pk = id)
+    machine_obj.delete()
     return Response({"detail": "%s was deleted." % id}, status=status.HTTP_200_OK)
 
 
