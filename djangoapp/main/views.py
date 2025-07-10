@@ -240,11 +240,11 @@ def add_machine(request):
         image = request.data.get('image')
         type = request.data.get('type')
         id = request.data.get('id')
+        emp_id = request.data.get('emp_id')
     
         if Machine.objects.filter(name = machine_name, production_area__prod_area_name = prod_area_name).exclude(pk = id).exists():
             return Response({"detail": "Duplicated, this machine type already exist in the list."}, status=status.HTTP_409_CONFLICT)
         
-        print(image)
         if request.method == 'POST':
             Machine.objects.create(
                 name = machine_name,
@@ -253,7 +253,15 @@ def add_machine(request):
                 production_area = get_object_or_404(ProductionArea, prod_area_name = prod_area_name),
             )
         elif request.method == 'PUT':
-            Machine.objects.filter(id = id).update(name = machine_name, image = image)
+            machine = get_object_or_404(Machine, id=id)
+            machine.name = machine_name
+            machine.type = type
+            machine.production_area = get_object_or_404(ProductionArea, prod_area_name=prod_area_name)
+
+            if image:
+                machine.image = image  # Triggers upload_to path properly
+
+            machine.save()  # Ensures upload_to is respected and old image is deleted
 
         return Response({"detail": "success"}, status=status.HTTP_200_OK)
     except Exception as e:

@@ -358,7 +358,12 @@ def update_component(request, pk):
                 # line_obj, l_created = Line.objects.filter(line_name=line_name, production_area= member.production_area)
                 line_obj = get_object_or_404(Line, line_name=line_name)
 
-                machine_obj = Machine.objects.filter(production_area = member.production_area, name = em_name).first()
+                machine_obj, created = Machine.objects.get_or_create(
+                    name = em_name,
+                    defaults={
+                        "production_area" : member.production_area
+                    }
+                )
                     
                 if stock_id:
                     # Update Exist Relation

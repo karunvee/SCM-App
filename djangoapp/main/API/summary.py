@@ -213,15 +213,64 @@ def data_analysis_summary(request):
 @permission_classes([IsAuthenticated])
 def data_machinery_summary(request, prod_area_name):
     try:
-        d = {}
+        data = {}
 
-        lineObj = Line.objects.filter(production_area__prod_area_name = prod_area_name)
-        
+        prodArea = get_object_or_404(ProductionArea, prod_area_name = prod_area_name)
+        comObj = Component.objects.filter(location__production_area = prodArea)
 
-        # Machine list 
+
+
+        # Overall Area
+        com_shortage_count = comObj.filter(quantity__lt=models.F('quantity_alert')).count()
+        com_normal_count = comObj.count()
+        data['overall'] = {}
+        data['overall']['normal'] = com_normal_count
+        data['overall']['shortage'] = com_shortage_count
+        data['overall']['percentage'] = (com_shortage_count * 100.0) / com_normal_count
+
+        # By Line
+        shortage_data_by_line = (
+            MachineRelation.objects
+            .values('line__line_name')  # Group by line
+            .annotate(
+                total_components=Count('component', distinct=True),
+                shortage_components=Count('component', filter=Q(component__quantity__lt=F('component__quantity_alert')), distinct=True)
+            )
+            .annotate(
+                shortage_percent=F('shortage_components') * 100.0 / F('total_components')
+            )
+        )
+        data['lines'] = shortage_data_by_line
+
+        shortage_by_machine = (
+            Machine.objects.annotate(
+                total_components=Count('machinerelation__component', distinct=True),
+                shortage_components=Count(
+                    'machinerelation__component',
+                    filter=Q(machinerelation__component__quantity__lt=F('machinerelation__component__quantity_alert')),
+                    distinct=True
+                )
+            )
+            .annotate(
+                shortage_percent=F('shortage_components') * 100.0 / F('total_components')
+            )
+        )
+        serializer_data_by_machine = MachineWithShortageSerializer(instance = shortage_by_machine, many=True)
+        data['machines'] = serializer_data_by_machine.data
+
         # Top 10 priority equipment shortage
+        priority_comp_shortage = (
+            comObj
+            .filter(quantity__lt=F('quantity_alert')) 
+            .annotate(machine_count=Count('machine'))
+            .order_by('-machine_count')[:10]
+        )
+        serializer_data_top_priority = PriorityComponentSerializer(instance = priority_comp_shortage, many=True)
+        data['top_ten_priority'] = serializer_data_top_priority.data
 
-        return Response({"detail": "success", "data": None}, status=status.HTTP_200_OK)
+
+
+        return Response({"detail": "success", "data": data}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     

@@ -274,9 +274,10 @@ class Component(models.Model):
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_c_member')
 
     machine = models.ManyToManyField(Machine, through='MachineRelation')
-    # equipment_type = models.ManyToManyField(EquipmentType, through='EquipmentTypeRelation')
-    # machine_type = models.ManyToManyField(MachineType, through='MachineTypeRelation')
 
+    def __str__(self):
+        return f"{self.name}, {self.model}"
+    
     def save(self, *args, **kwargs):
         try:
             # Check if the instance already exists in the database
@@ -303,8 +304,20 @@ class Component(models.Model):
         else:
             return ''
         
-    def __str__(self):
-        return f"{self.name}, {self.model}"
+    @property
+    def shortage(self):
+        try:
+            return self.quantity < self.quantity_alert
+        except:
+            pass
+    
+    @property
+    def machineRelateCount(self):
+        try:
+            return self.machine.count()
+        except:
+            pass
+        
 
 
 class MachineRelation(models.Model):

@@ -41,38 +41,26 @@ class SerialNumberSerializer(serializers.ModelSerializer):
         model = SerialNumber
         fields = '__all__'
 
-# class MachineTypeSerializer(serializers.ModelSerializer):
-#     class Meta(object):
-#         model = MachineType
-#         fields = '__all__'
-
-# class EquipmentTypeSerializer(serializers.ModelSerializer):
-#     class Meta(object):
-#         model = EquipmentType
-#         fields = '__all__'
-
-# class EquipmentTypeRelationSerializer(serializers.ModelSerializer):
-#     equipment_type = serializers.StringRelatedField()
-#     class Meta(object):
-#         model = EquipmentTypeRelation
-#         fields = '__all__'
-
-# class MachineTypeRelationSerializer(serializers.ModelSerializer):
-#     machine_type = serializers.StringRelatedField()
-#     class Meta(object):
-#         model = MachineTypeRelation
-#         fields = '__all__'
-
 class MachineSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Machine
         fields = '__all__'
+        
 
 class MachineRelationSerializer(serializers.ModelSerializer):
     machine = serializers.StringRelatedField()
     class Meta(object):
         model = MachineRelation
         fields = '__all__'
+
+class MachineWithShortageSerializer(serializers.ModelSerializer):
+    shortage_percent = serializers.FloatField()
+    shortage_components = serializers.IntegerField()
+    total_components = serializers.IntegerField()
+
+    class Meta:
+        model = Machine
+        fields = ['id', 'name', 'image', 'shortage_percent', 'shortage_components', 'total_components']
 
 class ComponentSerializer(serializers.ModelSerializer):
     serial_numbers  = SerialNumberSerializer(many=True, read_only=True)
@@ -128,6 +116,17 @@ class ComponentInfoSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Component
         fields = '__all__'
+
+class PriorityComponentSerializer(serializers.ModelSerializer):
+    machine_count = serializers.IntegerField()
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Component
+        fields = ['id', 'name', 'model', 'quantity', 'quantity_alert', 'machine_count', 'image_url']
+
+    def get_image_url(self, obj):
+        return obj.image_url
 
 class ComponentImageSerializer(serializers.ModelSerializer):
     class Meta(object):
