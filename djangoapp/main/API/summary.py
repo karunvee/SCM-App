@@ -243,16 +243,18 @@ def data_machinery_summary(request, prod_area_name):
         data['lines'] = shortage_data_by_line
 
         shortage_by_machine = (
-            Machine.objects.annotate(
-                total_components=Count('machinerelation__component', distinct=True),
-                shortage_components=Count(
+            Machine.objects.filter(Q(machinerelation__line__isnull=False)).annotate(
+                total_machines=Coalesce(Sum('machinerelation__m_quantity'), Value(0)),
+                total_components=Coalesce(Count('machinerelation__component', distinct=True), Value(0)),
+                shortage_components=Coalesce(Count(
                     'machinerelation__component',
                     filter=Q(machinerelation__component__quantity__lt=F('machinerelation__component__quantity_alert')),
                     distinct=True
-                )
+                ), Value(0))
             )
             .annotate(
-                shortage_percent=F('shortage_components') * 100.0 / F('total_components')
+                shortage_percent=F('shortage_components') * 100.0 / F('total_components'),
+                line=F('machinerelation__line__line_name')
             )
         )
         serializer_data_by_machine = MachineWithShortageSerializer(instance = shortage_by_machine, many=True)
@@ -274,6 +276,37 @@ def data_machinery_summary(request, prod_area_name):
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def data_machinery_by_machine(request, machine_id, line_name):
+    try:
+        machine = get_object_or_404(Machine, pk=machine_id)
+        # .distinct() to eliminate duplicates:
+        compObj = Component.objects.filter(
+            machinerelation__machine=machine,
+            machinerelation__line__line_name=line_name).distinct()
+        print(compObj)
+        serializer_data = ComponentOnlyInfoSerializer(instance=compObj, many=True)
+
+        return Response({"detail": "success", "data": serializer_data.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def data_machinery_by_equipment(request, equipment_id):
+    try:
+        mcObj = MachineRelation.objects.filter(component = get_object_or_404(Component, pk = equipment_id)).distinct()
+        serializer_data = MachineRelationSerializer(instance=mcObj, many=True)
+
+        return Response({"detail": "success", "data": serializer_data.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class WarRoom_API:
     hostname = "https://thwgrwarroom.deltaww.com:8002/api/warroom"

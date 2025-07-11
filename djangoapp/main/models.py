@@ -334,10 +334,10 @@ class MachineRelation(models.Model):
     modify_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='modify_ms_member')
     added_member = models.ForeignKey(Member, on_delete=models.CASCADE, blank=True, null=True, related_name='added_ms_member')
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['machine', 'line'], name='unique_machine_per_line')
-        ]
+    # class Meta:
+    #     constraints = [
+    #         models.UniqueConstraint(fields=['machine', 'line'], name='unique_machine_per_line')
+    #     ]
 
     def __str__(self):
         return f"{self.machine.name}, {self.component.name}"

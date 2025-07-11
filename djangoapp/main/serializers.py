@@ -48,19 +48,38 @@ class MachineSerializer(serializers.ModelSerializer):
         
 
 class MachineRelationSerializer(serializers.ModelSerializer):
-    machine = serializers.StringRelatedField()
+    machine = MachineSerializer()
+    line = serializers.StringRelatedField()
     class Meta(object):
         model = MachineRelation
         fields = '__all__'
 
 class MachineWithShortageSerializer(serializers.ModelSerializer):
+    total_machines = serializers.IntegerField()
     shortage_percent = serializers.FloatField()
     shortage_components = serializers.IntegerField()
     total_components = serializers.IntegerField()
+    line = serializers.StringRelatedField()
 
     class Meta:
         model = Machine
-        fields = ['id', 'name', 'image', 'shortage_percent', 'shortage_components', 'total_components']
+        fields = ['id', 'name', 'image', 'type', 'line', 'total_machines', 'shortage_percent', 'shortage_components', 'total_components']
+
+class ComponentOnlyInfoSerializer(serializers.ModelSerializer):
+    department = serializers.StringRelatedField()
+    component_type = serializers.StringRelatedField()
+    location = serializers.StringRelatedField()
+    modify_member = serializers.StringRelatedField()
+    added_member = serializers.StringRelatedField()
+
+    class Meta:
+        model = Component
+        fields = [
+            'id', 'name', 'model', 'description', 'unique_id', 'price', 'supplier', 'mro_pn', 'consumable', 'image',
+            'component_type', 'department', 'location', 'issue_date', 'self_pickup', 'unique_component',
+            'quantity', 'quantity_warning', 'quantity_alert', 'last_inventory_date', 'next_inventory_date', 'price',
+            'modify_member', 'added_member'
+        ]
 
 class ComponentSerializer(serializers.ModelSerializer):
     serial_numbers  = SerialNumberSerializer(many=True, read_only=True)

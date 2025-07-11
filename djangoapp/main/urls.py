@@ -99,6 +99,8 @@ urlpatterns = [
     path('data/analysis_breakdown/', data_analysis_breakdown, name='data_analysis_breakdown'),
 
     path('data/machinery_summary/<str:prod_area_name>/', data_machinery_summary, name='data_machinery_summary'),
+    path('data/machinery/machine/<int:machine_id>/line/<str:line_name>/', data_machinery_by_machine, name='data_machinery_by_machine'),
+    path('data/machinery/equipment/<int:equipment_id>/', data_machinery_by_equipment, name='data_machinery_by_equipment'),
 
     path('data/auto_align_safety_stock/<str:prod_area_name>/', auto_align_safety_stock, name='auto_align_safety_stock'),
     
