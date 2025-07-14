@@ -72,6 +72,19 @@ def get_production_area(request):
 
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['PUT'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def update_account_info(request):
+    try:
+        prodArea = ProductionArea.objects.all()
+        serializer = ProductionAreaSerializer(instance=prodArea, many=True)
+        return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])

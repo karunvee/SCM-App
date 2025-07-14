@@ -8,6 +8,13 @@ urlpatterns = [
     path('trading/check_in/', check_in , name='check_in'),
 
     path('account/pd/area/', get_production_area , name='get_production_area'),
+    path('account/info/update/<int:emp_id>/', update_account_info , name='update_account_info'),
+    path('account/list/', get_account , name='get_account'),
+    path('account/in_production_area/', get_account_in_production_area , name='get_account_in_production_area'),
+    path('account/role/update/', set_account_role , name='set_account_role'),
+    path('account/create/', create_account , name='create_account'),
+    path('account/delete/', delete_account , name='delete_account'),
+
     path('approved/route/info/', get_approved_route , name='get_approved_route'),    
     path('approved/your/route/', get_your_approved_route , name='get_your_approved_route'),    
 
@@ -61,13 +68,6 @@ urlpatterns = [
     path('add/item/serial_number/', add_item , name='add_item'),
     path('add/item/unique/', add_item_unique , name='add_item_unique'),
     path('serial_number/list/', get_item , name='get_item'),
-    
-    path('account/list/', get_account , name='get_account'),
-    path('account/in_production_area/', get_account_in_production_area , name='get_account_in_production_area'),
-    path('account/role/update/', set_account_role , name='set_account_role'),
-    path('account/create/', create_account , name='create_account'),
-    path('account/delete/', delete_account , name='delete_account'),
-
 
     path('check/po/number/', check_po, name='check_po'),
 
