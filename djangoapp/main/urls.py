@@ -106,4 +106,5 @@ urlpatterns = [
     
     
     path('shift_duty_roster/today', getCurrentDutyShift, name='getCurrentDutyShift'),
+    path('shift_duty_roster/create/', createDutyShift, name='createDutyShift'),
 ]

@@ -410,3 +410,30 @@ def getCurrentDutyShift(request):
     except Exception as e:
         print(e)
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PUT', 'POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def createDutyShift(request):
+    try:
+        id = request.data.get('id')
+        emp_id = request.data.get('emp_id')
+        date_start = request.data.get('date_start')
+        date_end = request.data.get('date_end')
+
+        period_start = datetime(date_start)
+        period_end = datetime(date_end)
+
+        dutyObj = ShiftDuty.objects.update_or_create(
+            id=id, 
+            emp_id=emp_id, 
+            defaults={
+                "period_start": period_start,
+                "period_end": period_end,
+            })
+        serializer = ShiftDutySerializer(instance = dutyObj, many=True)
+        return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

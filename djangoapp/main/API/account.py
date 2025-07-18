@@ -76,11 +76,19 @@ def get_production_area(request):
 @api_view(['PUT'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def update_account_info(request):
+def update_account_info(request, emp_id):
     try:
-        prodArea = ProductionArea.objects.all()
-        serializer = ProductionAreaSerializer(instance=prodArea, many=True)
-        return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        image = request.data.get('image')
+        tel = request.data.get('tel')
+        line_id = request.data.get('line_id')
+
+        empObj = get_object_or_404(Member, emp_id = emp_id)
+        empObj.image = image
+        empObj.tel = tel
+        empObj.line_id = line_id
+        empObj.save()
+        serializer_data = MemberSerializer(instance=empObj)
+        return Response({"detail": "success", "data": serializer_data.data}, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
