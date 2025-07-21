@@ -106,5 +106,7 @@ urlpatterns = [
     
     
     path('shift_duty_roster/today', getCurrentDutyShift, name='getCurrentDutyShift'),
+    path('shift_duty_roster/calendar/', getCalendarDutyShift, name='getCalendarDutyShift'),
     path('shift_duty_roster/create/', createDutyShift, name='createDutyShift'),
+    path('shift_duty_roster/delete/<str:shift_id>/', deleteDutyShift, name='deleteDutyShift'),
 ]

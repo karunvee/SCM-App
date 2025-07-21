@@ -9,6 +9,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.core.paginator import Paginator
+from django.utils.dateparse import parse_datetime
 import requests
 
 import pytz
@@ -410,6 +411,35 @@ def getCurrentDutyShift(request):
     except Exception as e:
         print(e)
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def getCalendarDutyShift(request):
+    try:
+        now = datetime.now(pytz.timezone('Asia/Bangkok'))
+        expired_date = now - timedelta(days = 90)
+
+        d = ShiftDuty.objects.filter(period_end__lte = expired_date)
+        d.delete() 
+
+        query_serializer = ComponentProdNameQuerySerializer(data = request.query_params)
+        if query_serializer.is_valid():
+            production_name = query_serializer.validated_data.get('production_name')
+            dutyObj = ShiftDuty.objects.filter(
+                production_area__prod_area_name = production_name)
+            if not dutyObj.exists():
+                return Response({"detail": "success", "data": []}, status=status.HTTP_204_NO_CONTENT)
+            
+
+            serializer = ShiftDutySerializer(instance = dutyObj, many=True)
+            return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Data format is invalid"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['PUT', 'POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -418,21 +448,50 @@ def createDutyShift(request):
     try:
         id = request.data.get('id')
         emp_id = request.data.get('emp_id')
+        shift = request.data.get('shift')
         date_start = request.data.get('date_start')
         date_end = request.data.get('date_end')
 
-        period_start = datetime(date_start)
-        period_end = datetime(date_end)
+        period_start = parse_datetime(date_start)
+        period_end = parse_datetime(date_end)
 
-        dutyObj = ShiftDuty.objects.update_or_create(
-            id=id, 
-            emp_id=emp_id, 
-            defaults={
-                "period_start": period_start,
-                "period_end": period_end,
-            })
-        serializer = ShiftDutySerializer(instance = dutyObj, many=True)
-        return Response({"detail": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        memberObj = get_object_or_404(Member, emp_id = emp_id)
+        if id:
+            dutyObj, created = ShiftDuty.objects.update_or_create(
+                id=id,
+                defaults={
+                    "production_area": memberObj.production_area,
+                    "member": memberObj,
+                    "shift": shift,
+                    "period_start": period_start,
+                    "period_end": period_end,
+                }
+            )
+        else:
+            dutyObj = ShiftDuty.objects.create(
+                production_area=memberObj.production_area,
+                member=memberObj,
+                shift=shift,
+                period_start=period_start,
+                period_end=period_end,
+            )
+            created = True
+        # serializer = ShiftDutySerializer(instance = dutyObj)
+        return Response({"detail": "success", "data": "Created" if created else "Updated"}, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        print(e)
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def deleteDutyShift(request, shift_id):
+    try:
+        shiftObj = get_object_or_404(ShiftDuty, id = shift_id)
+        shiftObj.delete()
+        return Response({"detail": "success", "data": f"Deleted the shift duty id {shift_id}"}, status=status.HTTP_200_OK)
     
     except Exception as e:
         print(e)
