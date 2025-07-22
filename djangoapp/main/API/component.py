@@ -127,7 +127,8 @@ def auto_align_safety_stock_function(prod_area_name):
     prodArea = get_object_or_404(ProductionArea, prod_area_name=prod_area_name)  # Fixed field name
 
     comp_update_list = []
-    componentList = Component.objects.filter(production_area = prodArea)
+    componentList = Component.objects.filter(production_area = prodArea, machine__isnull=False)
+
 
     for comp in componentList:
         total_acc = 0
