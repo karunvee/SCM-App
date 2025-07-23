@@ -231,6 +231,7 @@ def data_machinery_summary(request, prod_area_name):
         # By Line
         shortage_data_by_line = (
             MachineRelation.objects
+            .filter(machine__production_area = prodArea)
             .values('line__line_name')  # Group by line
             .annotate(
                 total_components=Count('component', distinct=True),
@@ -243,7 +244,9 @@ def data_machinery_summary(request, prod_area_name):
         data['lines'] = shortage_data_by_line
 
         shortage_by_machine = (
-            Machine.objects.filter(Q(machinerelation__line__isnull=False)).annotate(
+            Machine.objects
+            .filter(Q(machinerelation__line__isnull=False), production_area = prodArea)
+            .annotate(
                 total_machines=Coalesce(Sum('machinerelation__m_quantity'), Value(0)),
                 total_components=Coalesce(Count('machinerelation__component', distinct=True), Value(0)),
                 shortage_components=Coalesce(Count(

@@ -134,7 +134,7 @@ def approval_list(request):
                 # Administrator
                 if not approver.is_supervisor:
                     return Response({"detail": "Not found, you have no approved route."}, status=status.HTTP_404_NOT_FOUND)
-                request_obj = Request.objects.filter(status__in = ['Requested', 'Staff']).order_by('-issue_date')
+                request_obj = Request.objects.filter(requester__production_area = approver.production_area, status__in = ['Requested', 'Staff']).order_by('-issue_date')
             
             print(approver.production_area)
 
