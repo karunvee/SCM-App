@@ -53,6 +53,12 @@ def checkout_cart(request):
             sup = staff
 
         now = datetime.now(pytz.timezone('Asia/Bangkok'))
+
+        for item in item_list:
+            component = get_object_or_404(Component, pk = item['component_id'])
+            if  item['quantity'] > component.quantity:
+                return Response({"detail": "The quantity of items does not meet the requirement. Please refresh the page and try again!"}, status=status.HTTP_406_NOT_ACCEPTABLE) 
+        
         requestReceipt = Request.objects.create(
             requester = rqt, 
             staff_approved = staff, 

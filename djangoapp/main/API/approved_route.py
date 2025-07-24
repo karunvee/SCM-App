@@ -478,6 +478,10 @@ def pick_up(request):
         history_items = []
         component_relate = RequestComponentRelation.objects.filter(request = request_obj)
         for cr in component_relate:
+
+            if cr.qty > cr.component.quantity:
+                return Response({"detail": "The quantity of items does not meet the requirement. Please delete this request and try again."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            
             serial_numbers_obj = SerialNumber.objects.filter(request__id = request_obj.id, component = cr.component)
             serial_numbers = []
             for sn in serial_numbers_obj:
@@ -496,6 +500,7 @@ def pick_up(request):
                 scrap_serial_numbers = []
 
             scrap_list = [item['sn'] for item in scrap_serial_numbers if item['component_id'] == cr.component.pk]
+            
 
             history_items.append(HistoryTrading(
                     requester = request_name,
@@ -580,6 +585,10 @@ def set_self_pick_up(request):
         component_relate = RequestComponentRelation.objects.filter(request=request_obj)
 
         for cr in component_relate:
+
+            if cr.qty > cr.component.quantity:
+                return Response({"detail": "The quantity of items does not meet the requirement. Please delete this request and try again."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            
             serial_numbers_obj = SerialNumber.objects.filter(request=request_obj, component=cr.component)
             serial_numbers = [sn.serial_number for sn in serial_numbers_obj]
 

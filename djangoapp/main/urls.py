@@ -39,6 +39,8 @@ urlpatterns = [
     path('component/info/cart/', component_cart , name='component_cart'),
     path('checkout/cart/', checkout_cart , name='checkout_cart'),
 
+    path('my/toolbox/<str:emp_id>/', my_toolbox , name='my_toolbox'),
+
     path('my/request/', my_request , name='my_request'),
     path('my/request/delete/', delete_my_request , name='delete_my_request'),
 

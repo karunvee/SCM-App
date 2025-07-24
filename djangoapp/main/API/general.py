@@ -496,3 +496,15 @@ def deleteDutyShift(request, shift_id):
     except Exception as e:
         print(e)
         return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def my_toolbox(request, emp_id):
+    try:
+        toolObj = Tooling.objects.filter(Q(borrowerrelation__member__emp_id =  emp_id))
+        serializers_data = ToolingSerializer(instance=toolObj, many=True)
+        return Response({"detail": "success", "data": serializers_data.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": f"Failure, data as provided is incorrect. Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
