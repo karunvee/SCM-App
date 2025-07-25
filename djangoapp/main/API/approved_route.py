@@ -480,6 +480,8 @@ def pick_up(request):
         for cr in component_relate:
 
             if cr.qty > cr.component.quantity:
+                request_obj.conflict_status = True
+                request_obj.save()
                 return Response({"detail": "The quantity of items does not meet the requirement. Please delete this request and try again."}, status=status.HTTP_406_NOT_ACCEPTABLE)
             
             serial_numbers_obj = SerialNumber.objects.filter(request__id = request_obj.id, component = cr.component)

@@ -167,7 +167,7 @@ class RequestSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Request
         fields = ['id', 'requester', 'staff_approved', 'supervisor_approved', 'prepare_by','status', 'pickup_status', 'lines',
-                  'rejected', 'purpose_detail', 'purpose_type', 'scrap_status', 'scrap_list', 'self_pickup',
+                  'rejected', 'purpose_detail', 'purpose_type', 'scrap_status', 'scrap_list', 'self_pickup', 'conflict_status',
                   'requester_name_center', 'requester_emp_center',
                   'issue_date', 'complete_date']
 

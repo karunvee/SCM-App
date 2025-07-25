@@ -448,6 +448,7 @@ class Request(models.Model):
     purpose_detail = models.TextField()
     prepare_by = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='prepare_by', blank=True, null=True)
 
+    conflict_status = models.BooleanField(default= False)
     status =  models.CharField(max_length = 255, choices=STATUS, default=STATUS[0][0])
     pickup_status =  models.BooleanField(default= False)
     rejected = models.BooleanField(default= False)
